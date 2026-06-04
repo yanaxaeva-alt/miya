@@ -176,3 +176,27 @@ autonomy_contract:
     assert validate_result.exit_code == 0
     assert '"name":"Mia"' in inspect_result.output.replace(" ", "")
     assert "Persona package is valid: Mia" in validate_result.output
+
+
+def test_safety_check_command_evaluates_and_logs_action(tmp_path: Path) -> None:
+    """The safety check command evaluates an action and appends a decision log."""
+    runner = CliRunner()
+    action = tmp_path / "read.json"
+    log_path = tmp_path / "decisions.jsonl"
+    action.write_text(
+        """
+{
+  "action_class": "read",
+  "actor": "mia.test",
+  "resource": "file://sandbox/example.md"
+}
+""".strip(),
+        encoding="utf-8",
+    )
+
+    result = runner.invoke(app, ["safety", "check", str(action), "--log", str(log_path)])
+
+    assert result.exit_code == 0
+    assert '"decision":"allow"' in result.output.replace(" ", "")
+    assert log_path.exists()
+    assert "policy_decision" in log_path.read_text(encoding="utf-8")

@@ -9,12 +9,14 @@ from rich.table import Table
 
 from miaos import __version__
 from miaos.models import ModelManager, ModelNotFoundError, ModelRole, provider_infos
+from miaos.observability import DecisionLog
 from miaos.persona import (
     PersonaPackageError,
     create_persona_package,
     validate_persona_package,
 )
 from miaos.runtime import RuntimeProfileError, list_runtime_profiles, load_runtime_profile
+from miaos.safety import ActionRequest, PolicyGate
 
 app = typer.Typer(
     add_completion=False,
@@ -26,10 +28,13 @@ error_console = Console(stderr=True)
 runtime_app = typer.Typer(help="Inspect hardware-aware runtime profiles.")
 model_app = typer.Typer(help="Inspect model provider and registry state.")
 persona_app = typer.Typer(help="Create, inspect, and validate `.mia` persona packages.")
+safety_app = typer.Typer(help="Evaluate action requests through the Policy Gate.")
 app.add_typer(runtime_app, name="runtime")
 app.add_typer(model_app, name="model")
 app.add_typer(persona_app, name="persona")
+app.add_typer(safety_app, name="safety")
 DEFAULT_MODEL_DB_PATH = Path(".miaos") / "models.sqlite3"
+DEFAULT_DECISION_LOG_PATH = Path(".miaos") / "decisions.jsonl"
 
 
 def _version_callback(value: bool) -> None:
@@ -239,3 +244,23 @@ def persona_validate(
         error_console.print(f"Error: {exc}", style="red")
         raise typer.Exit(code=1) from exc
     console.print(f"Persona package is valid: {manifest.name} ({manifest.persona_id})")
+
+
+@safety_app.command("check")
+def safety_check(
+    action_path: Annotated[Path, typer.Argument(help="Path to an action request JSON file.")],
+    log_path: Annotated[
+        Path,
+        typer.Option("--log", help="Path to append decisions.jsonl events."),
+    ] = DEFAULT_DECISION_LOG_PATH,
+) -> None:
+    """Evaluate an action request, append an audit decision, and print the decision."""
+    try:
+        request = ActionRequest.model_validate_json(action_path.read_text(encoding="utf-8"))
+    except ValueError as exc:
+        error_console.print(f"Error: invalid action request: {exc}", style="red")
+        raise typer.Exit(code=1) from exc
+
+    decision = PolicyGate().evaluate(request)
+    DecisionLog(log_path).append_policy_decision(decision)
+    console.print(decision.model_dump_json(indent=2))

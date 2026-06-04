@@ -1,0 +1,7 @@
+{
+  "action_class": "publish",
+  "actor": "mia.skill.blog_writer",
+  "resource": "social://draft/philosophy-post",
+  "domain": "blogging",
+  "description": "Publish a prepared philosophy blog post."
+}
