@@ -1,2 +1,0 @@
-[console_scripts]
-miaos = miaos.cli:main
