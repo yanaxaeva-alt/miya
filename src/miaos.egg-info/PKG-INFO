@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: miaos
+Version: 0.1.0
+Summary: Hardware-aware runtime profiles and model providers for MiaOS.
+Requires-Python: >=3.11
+Description-Content-Type: text/markdown
+Requires-Dist: PyYAML>=6.0.2
+
+# MiaOS
+
+Minimal Python runtime scaffolding for hardware-aware model profile selection.

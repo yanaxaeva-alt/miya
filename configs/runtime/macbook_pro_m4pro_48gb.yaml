@@ -1,0 +1,122 @@
+name: macbook_pro_m4pro_48gb
+description: Main integration runtime profile for MacBook Pro M4 Pro 48 GB.
+default_provider: mlx
+default_model_id: qwen3.6-27b-8bit
+hardware:
+  name: MacBook Pro M4 Pro 48 GB
+  machine_family: macbook_pro
+  chip: m4pro
+  unified_memory_gb: 48
+  runtime_memory_budget_gb: 40
+  profile_tier: main_integration
+  intended_uses:
+    - graph_runtime
+    - observability
+    - integration_testing
+    - richer_model_pool
+  supports_mlx: true
+  max_parallel_models: 2
+  notes:
+    - Practical always-on profile for the main local integration environment.
+    - Target model can stay at 27B 8bit while preserving explicit fallback.
+models:
+  - id: qwen3.6-27b-8bit
+    provider: mlx
+    family: qwen3.6
+    variant: 27b
+    quantization: 8bit
+    roles:
+      - reasoning_primary
+      - target
+      - integration_default
+    min_memory_gb: 36
+    recommended_memory_gb: 40
+    context_window: 32768
+    fallback_ids:
+      - qwen3.6-14b-4bit
+    launch:
+      model_ref: mlx-community/Qwen3.6-27B-Instruct-8bit
+      command:
+        - mlx_lm.server
+        - --model
+        - mlx-community/Qwen3.6-27B-Instruct-8bit
+        - --host
+        - 127.0.0.1
+        - --port
+        - "8081"
+      host: 127.0.0.1
+      port: 8081
+  - id: qwen3.6-14b-4bit
+    provider: mlx
+    family: qwen3.6
+    variant: 14b
+    quantization: 4bit
+    roles:
+      - worker
+      - explicit_fallback
+    min_memory_gb: 16
+    recommended_memory_gb: 24
+    context_window: 32768
+    fallback_ids:
+      - qwen3.6-8b-4bit
+    launch:
+      model_ref: mlx-community/Qwen3.6-14B-Instruct-4bit
+      command:
+        - mlx_lm.server
+        - --model
+        - mlx-community/Qwen3.6-14B-Instruct-4bit
+        - --host
+        - 127.0.0.1
+        - --port
+        - "8082"
+      host: 127.0.0.1
+      port: 8082
+  - id: qwen3.6-8b-4bit
+    provider: mlx
+    family: qwen3.6
+    variant: 8b
+    quantization: 4bit
+    roles:
+      - worker
+      - low_memory_fallback
+    min_memory_gb: 10
+    recommended_memory_gb: 16
+    context_window: 16384
+    fallback_ids: []
+    launch:
+      model_ref: mlx-community/Qwen3.6-8B-Instruct-4bit
+      command:
+        - mlx_lm.server
+        - --model
+        - mlx-community/Qwen3.6-8B-Instruct-4bit
+        - --host
+        - 127.0.0.1
+        - --port
+        - "8083"
+      host: 127.0.0.1
+      port: 8083
+  - id: qwen3.6-1.7b-bf16
+    provider: mlx
+    family: qwen3.6
+    variant: 1.7b
+    quantization: bf16
+    roles:
+      - router
+      - utility
+    min_memory_gb: 6
+    recommended_memory_gb: 8
+    context_window: 16384
+    fallback_ids:
+      - qwen3.6-8b-4bit
+    launch:
+      model_ref: mlx-community/Qwen3.6-1.7B-Instruct-bf16
+      command:
+        - mlx_lm.server
+        - --model
+        - mlx-community/Qwen3.6-1.7B-Instruct-bf16
+        - --host
+        - 127.0.0.1
+        - --port
+        - "8084"
+      host: 127.0.0.1
+      port: 8084
