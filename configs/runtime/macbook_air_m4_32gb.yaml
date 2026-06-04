@@ -1,0 +1,48 @@
+name: macbook_air_m4_32gb
+role: dev_and_light_runtime
+hardware:
+  name: MacBook Air M4
+  unified_memory_gb: 32
+  apple_silicon_generation: M4
+primary_model_tier: qwen_7b_14b
+large_model_mode: optional_limited
+max_context_tokens_default: 32768
+max_context_tokens_experimental: 65536
+background_cycles: conservative
+always_busy: false
+thermal_policy: quiet
+vector_db: sqlite_or_lancedb_light
+observability: decisions_jsonl_only
+recommended_pool:
+  router:
+    role: router
+    candidates:
+      - qwen3_1_7b_bf16
+      - qwen3_4b_4bit
+    max_memory_gb: 5
+  worker:
+    role: worker
+    candidates:
+      - qwen3_7b_4bit
+      - qwen3_14b_4bit
+    max_memory_gb: 14
+  moe_expert:
+    role: moe_expert
+    candidates: []
+    max_memory_gb: 0
+  deep:
+    role: deep
+    candidates: []
+    max_memory_gb: 0
+safety_defaults:
+  autonomy_ceiling: L3
+  require_approval:
+    - publish
+    - send_message
+    - delete
+    - write_outside_sandbox
+  denied_always:
+    - financial_transaction
+    - self_modification
+    - contract_bypass
+    - disable_guardrails

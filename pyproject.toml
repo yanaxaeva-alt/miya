@@ -6,6 +6,7 @@ readme = "docs/architecture/implementation_roadmap.md"
 requires-python = ">=3.12"
 dependencies = [
     "pydantic>=2",
+    "pyyaml",
     "rich",
     "typer",
 ]
@@ -18,6 +19,7 @@ dev = [
     "mypy",
     "pytest",
     "ruff",
+    "types-PyYAML",
 ]
 
 [build-system]
