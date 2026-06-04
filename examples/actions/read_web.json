@@ -1,0 +1,7 @@
+{
+  "action_class": "read",
+  "actor": "mia.runtime",
+  "resource": "https://example.com",
+  "domain": "research",
+  "description": "Read a public web page for analysis."
+}
