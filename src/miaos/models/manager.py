@@ -9,7 +9,7 @@ from miaos.models.records import (
     ModelRole,
 )
 from miaos.models.registry import ModelRegistry
-from miaos.runtime import RuntimeProfile
+from miaos.runtime.profiles import RuntimeProfile
 
 CERTIFICATION_RANK = {
     LabCertificationStatus.CERTIFIED: 0,

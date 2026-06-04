@@ -9,6 +9,7 @@ from miaos.models import ModelManager, ModelRole
 
 MODEL_SIZE_BYTES = 8_300_000_000
 MODEL_CONTEXT_TOKENS = 32768
+CHAT_CLI_TURN_COUNT = 2
 
 
 def test_help_displays_command_name() -> None:
@@ -200,3 +201,62 @@ def test_safety_check_command_evaluates_and_logs_action(tmp_path: Path) -> None:
     assert '"decision":"allow"' in result.output.replace(" ", "")
     assert log_path.exists()
     assert "policy_decision" in log_path.read_text(encoding="utf-8")
+
+
+def test_chat_command_runs_mock_provider_with_persona(tmp_path: Path) -> None:
+    """The chat command runs the mock provider against a created persona package."""
+    runner = CliRunner()
+    profile = tmp_path / "persona.yaml"
+    persona_dir = tmp_path / "mia"
+    log_path = tmp_path / "decisions.jsonl"
+    profile.write_text(
+        """
+identity:
+  role: CLI chat persona
+values:
+  ranked: [honesty, care]
+model_binding:
+  provider: mock
+  model_id: mock-cli-chat
+autonomy_contract:
+  contract_id: cli-chat-contract
+  autonomy_ceiling: L3
+""".strip(),
+        encoding="utf-8",
+    )
+    create_result = runner.invoke(
+        app,
+        [
+            "persona",
+            "create",
+            "--name",
+            "Mia",
+            "--profile",
+            str(profile),
+            "--output",
+            str(persona_dir),
+        ],
+    )
+
+    chat_result = runner.invoke(
+        app,
+        [
+            "chat",
+            "--persona",
+            str(persona_dir),
+            "--provider",
+            "mock",
+            "--message",
+            "hello",
+            "--message",
+            "second",
+            "--log",
+            str(log_path),
+        ],
+    )
+
+    assert create_result.exit_code == 0
+    assert chat_result.exit_code == 0
+    assert "[mock-cli-chat] hello" in chat_result.output
+    assert "[mock-cli-chat] second" in chat_result.output
+    assert len(log_path.read_text(encoding="utf-8").splitlines()) == CHAT_CLI_TURN_COUNT

@@ -8,14 +8,24 @@ from rich.console import Console
 from rich.table import Table
 
 from miaos import __version__
-from miaos.models import ModelManager, ModelNotFoundError, ModelRole, provider_infos
+from miaos.models import (
+    MLXModelProvider,
+    MockModelProvider,
+    ModelManager,
+    ModelNotFoundError,
+    ModelProvider,
+    ModelRole,
+    provider_infos,
+)
 from miaos.observability import DecisionLog
 from miaos.persona import (
     PersonaPackageError,
     create_persona_package,
+    load_persona_package,
     validate_persona_package,
 )
 from miaos.runtime import RuntimeProfileError, list_runtime_profiles, load_runtime_profile
+from miaos.runtime.chat import ChatSession
 from miaos.safety import ActionRequest, PolicyGate
 
 app = typer.Typer(
@@ -264,3 +274,61 @@ def safety_check(
     decision = PolicyGate().evaluate(request)
     DecisionLog(log_path).append_policy_decision(decision)
     console.print(decision.model_dump_json(indent=2))
+
+
+@app.command("chat")
+def chat(
+    persona: Annotated[Path, typer.Option("--persona", help="Path to a `.mia` persona package.")],
+    provider_name: Annotated[
+        str,
+        typer.Option("--provider", help="Model provider name: mock or mlx."),
+    ] = "mock",
+    messages: Annotated[
+        list[str] | None,
+        typer.Option("--message", "-m", help="Message to send. Repeat for multiple turns."),
+    ] = None,
+    log_path: Annotated[
+        Path,
+        typer.Option("--log", help="Path to append decisions.jsonl events."),
+    ] = DEFAULT_DECISION_LOG_PATH,
+) -> None:
+    """Run a non-interactive chat session through the runtime vertical slice."""
+    if not messages:
+        error_console.print(
+            "Error: provide at least one --message for non-interactive chat",
+            style="red",
+        )
+        raise typer.Exit(code=1)
+
+    try:
+        persona_package = load_persona_package(persona)
+    except PersonaPackageError as exc:
+        error_console.print(f"Error: {exc}", style="red")
+        raise typer.Exit(code=1) from exc
+
+    provider = _provider_from_name(provider_name)
+    session = ChatSession(
+        persona=persona_package,
+        provider=provider,
+        decision_log=DecisionLog(log_path),
+    )
+    for message in messages:
+        turn = session.run_turn(message)
+        console.print(f"[{turn.trace_id}] {turn.response_text}", markup=False)
+
+
+def _provider_from_name(provider_name: str) -> ModelProvider:
+    """Resolve a provider name to a provider instance."""
+    if provider_name == "mock":
+        return MockModelProvider()
+    if provider_name == "mlx":
+        provider = MLXModelProvider()
+        if not provider.is_available():
+            error_console.print(
+                "Error: MLX provider is unavailable; install mlx-lm or use --provider mock",
+                style="red",
+            )
+            raise typer.Exit(code=1)
+        return provider
+    error_console.print(f"Error: unknown provider {provider_name!r}", style="red")
+    raise typer.Exit(code=1)
