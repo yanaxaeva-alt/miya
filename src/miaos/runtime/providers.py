@@ -78,6 +78,11 @@ class ModelProvider(Protocol):
     ) -> ResolvedModelSelection:
         """Resolve a model with explicit fallback."""
 
+    def availability_reason(
+        self, model: ModelProfile, hardware: HardwareProfile
+    ) -> str | None:
+        """Return None when a model is available, otherwise a human-readable reason."""
+
 
 class BaseModelProvider(ABC):
     """Shared provider behavior."""
@@ -101,6 +106,11 @@ class BaseModelProvider(ABC):
     @abstractmethod
     def _unavailability_reason(self, model: ModelProfile, hardware: HardwareProfile) -> str:
         raise NotImplementedError
+
+    def availability_reason(self, model: ModelProfile, hardware: HardwareProfile) -> str | None:
+        if self._is_model_available(model, hardware):
+            return None
+        return self._unavailability_reason(model, hardware)
 
     def list_models(self, runtime_profile: RuntimeProfile) -> tuple[ModelProfile, ...]:
         return runtime_profile.models_for_provider(self.provider_name())
