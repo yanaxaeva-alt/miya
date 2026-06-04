@@ -9,6 +9,11 @@ from rich.table import Table
 
 from miaos import __version__
 from miaos.models import ModelManager, ModelNotFoundError, ModelRole, provider_infos
+from miaos.persona import (
+    PersonaPackageError,
+    create_persona_package,
+    validate_persona_package,
+)
 from miaos.runtime import RuntimeProfileError, list_runtime_profiles, load_runtime_profile
 
 app = typer.Typer(
@@ -20,8 +25,10 @@ console = Console()
 error_console = Console(stderr=True)
 runtime_app = typer.Typer(help="Inspect hardware-aware runtime profiles.")
 model_app = typer.Typer(help="Inspect model provider and registry state.")
+persona_app = typer.Typer(help="Create, inspect, and validate `.mia` persona packages.")
 app.add_typer(runtime_app, name="runtime")
 app.add_typer(model_app, name="model")
+app.add_typer(persona_app, name="persona")
 DEFAULT_MODEL_DB_PATH = Path(".miaos") / "models.sqlite3"
 
 
@@ -188,3 +195,47 @@ def model_inspect(
         error_console.print(f"Error: model {model_id!r} not found", style="red")
         raise typer.Exit(code=1) from exc
     console.print(record.model_dump_json(indent=2))
+
+
+@persona_app.command("create")
+def persona_create(
+    name: Annotated[str, typer.Option("--name", help="Persona name.")],
+    profile: Annotated[Path, typer.Option("--profile", help="Persona profile YAML path.")],
+    output: Annotated[
+        Path | None,
+        typer.Option("--output", help="Output `.mia` directory. Defaults to profile parent."),
+    ] = None,
+) -> None:
+    """Create a minimal directory-based `.mia` persona package."""
+    try:
+        package = create_persona_package(name=name, profile_path=profile, output_path=output)
+    except PersonaPackageError as exc:
+        error_console.print(f"Error: {exc}", style="red")
+        raise typer.Exit(code=1) from exc
+    console.print(package.manifest.model_dump_json(indent=2))
+
+
+@persona_app.command("inspect")
+def persona_inspect(
+    path: Annotated[Path, typer.Argument(help="Path to a `.mia` directory package.")],
+) -> None:
+    """Inspect a `.mia` persona package manifest."""
+    try:
+        manifest = validate_persona_package(path)
+    except PersonaPackageError as exc:
+        error_console.print(f"Error: {exc}", style="red")
+        raise typer.Exit(code=1) from exc
+    console.print(manifest.model_dump_json(indent=2))
+
+
+@persona_app.command("validate")
+def persona_validate(
+    path: Annotated[Path, typer.Argument(help="Path to a `.mia` directory package.")],
+) -> None:
+    """Validate a `.mia` persona package."""
+    try:
+        manifest = validate_persona_package(path)
+    except PersonaPackageError as exc:
+        error_console.print(f"Error: {exc}", style="red")
+        raise typer.Exit(code=1) from exc
+    console.print(f"Persona package is valid: {manifest.name} ({manifest.persona_id})")

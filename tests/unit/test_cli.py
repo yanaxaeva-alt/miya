@@ -132,3 +132,47 @@ def test_model_inspect_command_prints_registered_record(tmp_path: Path) -> None:
 
     assert result.exit_code == 0
     assert '"repo":"local:inspect-model"' in result.output.replace(" ", "")
+
+
+def test_persona_create_inspect_validate_commands(tmp_path: Path) -> None:
+    """Persona CLI commands create and validate a minimal `.mia` directory."""
+    runner = CliRunner()
+    profile = tmp_path / "persona.yaml"
+    output = tmp_path / "mia"
+    profile.write_text(
+        """
+identity:
+  role: CLI persona
+values:
+  ranked: [honesty, care]
+model_binding:
+  provider: mock
+  model_id: mock-cli
+autonomy_contract:
+  contract_id: cli-contract
+  autonomy_ceiling: L3
+""".strip(),
+        encoding="utf-8",
+    )
+
+    create_result = runner.invoke(
+        app,
+        [
+            "persona",
+            "create",
+            "--name",
+            "Mia",
+            "--profile",
+            str(profile),
+            "--output",
+            str(output),
+        ],
+    )
+    inspect_result = runner.invoke(app, ["persona", "inspect", str(output)])
+    validate_result = runner.invoke(app, ["persona", "validate", str(output)])
+
+    assert create_result.exit_code == 0
+    assert inspect_result.exit_code == 0
+    assert validate_result.exit_code == 0
+    assert '"name":"Mia"' in inspect_result.output.replace(" ", "")
+    assert "Persona package is valid: Mia" in validate_result.output
