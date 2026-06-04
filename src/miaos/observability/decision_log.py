@@ -59,7 +59,7 @@ class DecisionLog:
     def verify_integrity(self) -> bool:
         """Verify the log hash chain."""
         previous_hash = ZERO_HASH
-        for event in self._read_events():
+        for event in self.list_events():
             expected_hash = self._hash_event(event, previous_hash=previous_hash)
             if event.previous_hash != previous_hash or event.event_hash != expected_hash:
                 return False
@@ -68,12 +68,12 @@ class DecisionLog:
 
     def _last_hash(self) -> str:
         """Return the current hash-chain tip."""
-        events = self._read_events()
+        events = self.list_events()
         if not events:
             return ZERO_HASH
         return events[-1].event_hash or ZERO_HASH
 
-    def _read_events(self) -> list[DecisionLogEvent]:
+    def list_events(self) -> list[DecisionLogEvent]:
         """Read all events from the log."""
         if not self.path.exists():
             return []
