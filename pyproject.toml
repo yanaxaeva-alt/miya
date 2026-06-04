@@ -46,6 +46,7 @@ ignore = [
 "src/miaos/cli.py" = ["FBT001", "FBT002", "PLR0913"]
 "src/miaos/models/manager.py" = ["PLR0913"]
 "src/miaos/models/registry.py" = ["S608"]
+"src/miaos/executor/runner.py" = ["PLR0913"]
 "tests/**/*.py" = ["S101"]
 
 [tool.mypy]

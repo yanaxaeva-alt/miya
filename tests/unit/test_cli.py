@@ -260,3 +260,54 @@ autonomy_contract:
     assert "[mock-cli-chat] hello" in chat_result.output
     assert "[mock-cli-chat] second" in chat_result.output
     assert len(log_path.read_text(encoding="utf-8").splitlines()) == CHAT_CLI_TURN_COUNT
+
+
+def test_graph_validate_and_run_commands(tmp_path: Path) -> None:
+    """Graph CLI commands validate and run a simple graph."""
+    runner = CliRunner()
+    graph_path = tmp_path / "graph.json"
+    log_path = tmp_path / "decisions.jsonl"
+    checkpoint_db = tmp_path / "checkpoints.sqlite3"
+    graph_path.write_text(
+        """
+{
+  "graph_id": "cli-graph",
+  "name": "CLI graph",
+  "nodes": [
+    {"id": "START", "type": "input"},
+    {"id": "Planner", "type": "llm", "config": {"prompt": "Plan"}},
+    {"id": "Approval", "type": "approval", "config": {"action_class": "publish"}},
+    {"id": "END", "type": "output"}
+  ],
+  "edges": [
+    {"source": "START", "target": "Planner"},
+    {"source": "Planner", "target": "Approval"},
+    {"source": "Approval", "target": "END"}
+  ]
+}
+""".strip(),
+        encoding="utf-8",
+    )
+
+    validate_result = runner.invoke(app, ["graph", "validate", str(graph_path)])
+    run_result = runner.invoke(
+        app,
+        [
+            "graph",
+            "run",
+            str(graph_path),
+            "--input",
+            "draft a post",
+            "--log",
+            str(log_path),
+            "--checkpoint-db",
+            str(checkpoint_db),
+        ],
+    )
+
+    assert validate_result.exit_code == 0
+    assert "Graph is valid: CLI graph" in validate_result.output
+    assert run_result.exit_code == 0
+    assert '"status":"waiting_for_approval"' in run_result.output.replace(" ", "")
+    assert log_path.exists()
+    assert checkpoint_db.exists()

@@ -8,6 +8,7 @@ from rich.console import Console
 from rich.table import Table
 
 from miaos import __version__
+from miaos.executor import AgentGraphSpec, CheckpointStore, GraphRunner
 from miaos.models import (
     MLXModelProvider,
     MockModelProvider,
@@ -39,12 +40,15 @@ runtime_app = typer.Typer(help="Inspect hardware-aware runtime profiles.")
 model_app = typer.Typer(help="Inspect model provider and registry state.")
 persona_app = typer.Typer(help="Create, inspect, and validate `.mia` persona packages.")
 safety_app = typer.Typer(help="Evaluate action requests through the Policy Gate.")
+graph_app = typer.Typer(help="Validate and run AgentGraph specifications.")
 app.add_typer(runtime_app, name="runtime")
 app.add_typer(model_app, name="model")
 app.add_typer(persona_app, name="persona")
 app.add_typer(safety_app, name="safety")
+app.add_typer(graph_app, name="graph")
 DEFAULT_MODEL_DB_PATH = Path(".miaos") / "models.sqlite3"
 DEFAULT_DECISION_LOG_PATH = Path(".miaos") / "decisions.jsonl"
+DEFAULT_CHECKPOINT_DB_PATH = Path(".miaos") / "checkpoints.sqlite3"
 
 
 def _version_callback(value: bool) -> None:
@@ -332,3 +336,53 @@ def _provider_from_name(provider_name: str) -> ModelProvider:
         return provider
     error_console.print(f"Error: unknown provider {provider_name!r}", style="red")
     raise typer.Exit(code=1)
+
+
+@graph_app.command("validate")
+def graph_validate(
+    graph_path: Annotated[Path, typer.Argument(help="Path to an AgentGraph JSON file.")],
+) -> None:
+    """Validate an AgentGraph JSON file."""
+    try:
+        graph = _load_graph(graph_path)
+    except ValueError as exc:
+        error_console.print(f"Error: invalid graph: {exc}", style="red")
+        raise typer.Exit(code=1) from exc
+    console.print(f"Graph is valid: {graph.name} ({graph.graph_id})")
+
+
+@graph_app.command("run")
+def graph_run(
+    graph_path: Annotated[Path, typer.Argument(help="Path to an AgentGraph JSON file.")],
+    input_text: Annotated[str, typer.Option("--input", help="Input text for the graph.")],
+    provider_name: Annotated[
+        str,
+        typer.Option("--provider", help="Model provider name: mock or mlx."),
+    ] = "mock",
+    log_path: Annotated[
+        Path,
+        typer.Option("--log", help="Path to append decisions.jsonl events."),
+    ] = DEFAULT_DECISION_LOG_PATH,
+    checkpoint_db: Annotated[
+        Path,
+        typer.Option("--checkpoint-db", help="SQLite checkpoint store path."),
+    ] = DEFAULT_CHECKPOINT_DB_PATH,
+) -> None:
+    """Run an AgentGraph with the selected provider."""
+    try:
+        graph = _load_graph(graph_path)
+    except ValueError as exc:
+        error_console.print(f"Error: invalid graph: {exc}", style="red")
+        raise typer.Exit(code=1) from exc
+    runner = GraphRunner(
+        provider=_provider_from_name(provider_name),
+        checkpoint_store=CheckpointStore(checkpoint_db),
+        decision_log=DecisionLog(log_path),
+    )
+    run = runner.run(graph, input_text=input_text)
+    console.print(run.model_dump_json(indent=2))
+
+
+def _load_graph(graph_path: Path) -> AgentGraphSpec:
+    """Load a graph specification from JSON."""
+    return AgentGraphSpec.model_validate_json(graph_path.read_text(encoding="utf-8"))

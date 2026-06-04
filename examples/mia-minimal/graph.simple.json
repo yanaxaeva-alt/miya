@@ -1,0 +1,67 @@
+{
+  "graph_id": "mia-minimal-approval-graph",
+  "name": "Minimal approval-gated graph",
+  "nodes": [
+    {
+      "id": "START",
+      "type": "input",
+      "label": "Start"
+    },
+    {
+      "id": "Planner",
+      "type": "llm",
+      "label": "Planner",
+      "config": {
+        "prompt": "Plan a safe answer for this request."
+      }
+    },
+    {
+      "id": "Worker",
+      "type": "llm",
+      "label": "Worker",
+      "config": {
+        "prompt": "Draft the result."
+      }
+    },
+    {
+      "id": "Critic",
+      "type": "critic",
+      "label": "Critic"
+    },
+    {
+      "id": "Approval",
+      "type": "approval",
+      "label": "Approval",
+      "config": {
+        "action_class": "publish"
+      }
+    },
+    {
+      "id": "END",
+      "type": "output",
+      "label": "End"
+    }
+  ],
+  "edges": [
+    {
+      "source": "START",
+      "target": "Planner"
+    },
+    {
+      "source": "Planner",
+      "target": "Worker"
+    },
+    {
+      "source": "Worker",
+      "target": "Critic"
+    },
+    {
+      "source": "Critic",
+      "target": "Approval"
+    },
+    {
+      "source": "Approval",
+      "target": "END"
+    }
+  ]
+}
