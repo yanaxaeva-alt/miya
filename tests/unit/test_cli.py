@@ -1,8 +1,14 @@
 """Smoke tests for the MiaOS command-line interface."""
 
+from pathlib import Path
+
 from typer.testing import CliRunner
 
 from miaos.cli import app
+from miaos.models import ModelManager, ModelRole
+
+MODEL_SIZE_BYTES = 8_300_000_000
+MODEL_CONTEXT_TOKENS = 32768
 
 
 def test_help_displays_command_name() -> None:
@@ -66,3 +72,63 @@ def test_model_providers_command_lists_known_providers() -> None:
     assert result.exit_code == 0
     assert "mock" in result.output
     assert "mlx" in result.output
+
+
+def test_model_register_and_list_commands_use_sqlite_registry(tmp_path: Path) -> None:
+    """The model register and list commands write to the configured SQLite DB."""
+    runner = CliRunner()
+    db_path = tmp_path / "models.sqlite3"
+
+    register_result = runner.invoke(
+        app,
+        [
+            "model",
+            "register",
+            "--repo",
+            "local:test-model",
+            "--family",
+            "qwen",
+            "--params-billion",
+            "7",
+            "--quant",
+            "4bit",
+            "--size-bytes",
+            str(MODEL_SIZE_BYTES),
+            "--context-len",
+            str(MODEL_CONTEXT_TOKENS),
+            "--path",
+            "/models/test-model",
+            "--pool-role",
+            "worker",
+            "--db",
+            str(db_path),
+        ],
+    )
+    list_result = runner.invoke(app, ["model", "list", "--db", str(db_path)])
+
+    assert register_result.exit_code == 0
+    assert list_result.exit_code == 0
+    assert "local:test-model" in list_result.output
+    assert "worker" in list_result.output
+
+
+def test_model_inspect_command_prints_registered_record(tmp_path: Path) -> None:
+    """The model inspect command prints one registered model as JSON."""
+    runner = CliRunner()
+    db_path = tmp_path / "models.sqlite3"
+    manager = ModelManager.from_path(db_path)
+    record = manager.register_model(
+        repo="local:inspect-model",
+        family="qwen",
+        params_billion=7,
+        quant="4bit",
+        size_bytes=MODEL_SIZE_BYTES,
+        context_len=MODEL_CONTEXT_TOKENS,
+        path="/models/inspect-model",
+        pool_role=ModelRole.WORKER,
+    )
+
+    result = runner.invoke(app, ["model", "inspect", record.id, "--db", str(db_path)])
+
+    assert result.exit_code == 0
+    assert '"repo":"local:inspect-model"' in result.output.replace(" ", "")
