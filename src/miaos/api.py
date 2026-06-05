@@ -5,6 +5,7 @@ from typing import Any
 
 import yaml
 from fastapi import FastAPI, HTTPException, WebSocket
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from miaos.executor import AgentGraphSpec, CheckpointStore, GraphEvent, GraphRunner
@@ -18,6 +19,11 @@ from miaos.persona import (
     validate_persona_package,
 )
 from miaos.runtime import list_runtime_profiles, load_runtime_profile
+
+DEV_CORS_ORIGINS = (
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+)
 
 
 class MiaOSApiState:
@@ -74,6 +80,13 @@ def create_app(state: MiaOSApiState | None = None) -> FastAPI:
     """Create the local API application."""
     api_state = state or MiaOSApiState(Path(".miaos"))
     app = FastAPI(title="MiaOS Builder API", version="0.1.0")
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=list(DEV_CORS_ORIGINS),
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
 
     @app.get("/health")
     def health() -> dict[str, str]:

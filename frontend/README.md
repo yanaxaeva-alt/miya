@@ -9,11 +9,11 @@ npm install
 npm run dev
 ```
 
-The frontend expects the FastAPI backend at `http://127.0.0.1:8000` by default.
+The frontend expects the FastAPI backend at `http://127.0.0.1:8765` by default.
 Override with:
 
 ```bash
-VITE_MIAOS_API_URL=http://127.0.0.1:8000 npm run dev
+VITE_API_BASE_URL=http://127.0.0.1:8765 npm run dev
 ```
 
 ## Pages
