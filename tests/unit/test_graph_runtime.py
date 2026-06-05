@@ -46,6 +46,30 @@ def test_graph_validation_accepts_valid_dag() -> None:
     assert graph.node_by_id("END").type == NodeType.OUTPUT
 
 
+def test_graph_validation_accepts_tool_and_memory_nodes() -> None:
+    """Visual graph node vocabulary includes safe tool and memory nodes."""
+    graph = AgentGraphSpec.model_validate(
+        {
+            "graph_id": "tool-memory",
+            "name": "Tool memory graph",
+            "nodes": [
+                {"id": "START", "type": "input"},
+                {"id": "Tool", "type": "tool", "config": {"action_class": "read"}},
+                {"id": "Memory", "type": "memory"},
+                {"id": "END", "type": "output"},
+            ],
+            "edges": [
+                {"source": "START", "target": "Tool"},
+                {"source": "Tool", "target": "Memory"},
+                {"source": "Memory", "target": "END"},
+            ],
+        }
+    )
+
+    assert graph.node_by_id("Tool").type == NodeType.TOOL
+    assert graph.node_by_id("Memory").type == NodeType.MEMORY
+
+
 def test_graph_validation_rejects_cycles() -> None:
     """Cyclic graphs fail validation."""
     with pytest.raises(ValueError, match="acyclic"):
@@ -110,4 +134,42 @@ def test_approval_node_stops_external_action(tmp_path: Path) -> None:
 
     assert run.status == "waiting_for_approval"
     assert run.outputs["Approval"] == "approval_request:require_approval:publish"
+    assert DecisionLog(tmp_path / "decisions.jsonl").verify_integrity() is True
+
+
+def test_tool_node_blocks_dangerous_action_without_side_effects(tmp_path: Path) -> None:
+    """Tool nodes pass Policy Gate and stop dangerous actions in mock runs."""
+    graph = AgentGraphSpec.model_validate(
+        {
+            "graph_id": "blocked-tool",
+            "name": "Blocked tool",
+            "nodes": [
+                {"id": "START", "type": "input"},
+                {
+                    "id": "Danger",
+                    "type": "tool",
+                    "config": {
+                        "tool_name": "finance_stub",
+                        "action_class": "financial_transaction",
+                    },
+                },
+                {"id": "END", "type": "output"},
+            ],
+            "edges": [
+                {"source": "START", "target": "Danger"},
+                {"source": "Danger", "target": "END"},
+            ],
+        }
+    )
+    runner = GraphRunner(
+        provider=MockModelProvider(),
+        checkpoint_store=CheckpointStore(tmp_path / "checkpoints.sqlite3"),
+        decision_log=DecisionLog(tmp_path / "decisions.jsonl"),
+    )
+
+    run = runner.run(graph, input_text="wire money")
+
+    assert run.status == "waiting_for_approval"
+    assert run.outputs["Danger"] == "tool_blocked:deny:financial_transaction"
+    assert not (tmp_path / "finance.txt").exists()
     assert DecisionLog(tmp_path / "decisions.jsonl").verify_integrity() is True

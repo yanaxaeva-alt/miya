@@ -159,6 +159,17 @@ class GraphRunner:
                 ),
                 False,
             )
+        if node.type == NodeType.TOOL:
+            return self._tool_node(
+                node,
+                previous_output=previous_output,
+                run_id=run_id,
+                trace_id=trace_id,
+                stream=stream,
+                event_sink=event_sink,
+            )
+        if node.type == NodeType.MEMORY:
+            return f"memory_context:mock:{previous_output[:EVENT_OUTPUT_PREVIEW_CHARS]}", False
         if node.type == NodeType.APPROVAL:
             return self._approval_node(
                 node,
@@ -172,6 +183,50 @@ class GraphRunner:
             return previous_output, False
         msg = f"unsupported node type: {node.type}"
         raise ValueError(msg)
+
+    def _tool_node(
+        self,
+        node: NodeSpec,
+        *,
+        previous_output: str,
+        run_id: str,
+        trace_id: str,
+        stream: EventStream,
+        event_sink: Callable[[GraphEvent], None] | None = None,
+    ) -> tuple[str, bool]:
+        """Mock-run a tool node through Policy Gate without external side effects."""
+        raw_action_class = str(node.config.get("action_class", ActionClass.READ.value))
+        action_class = ActionClass(raw_action_class)
+        tool_name = str(node.config.get("tool_name", "mock_tool"))
+        decision = self.policy_gate.evaluate(
+            ActionRequest(
+                action_class=action_class,
+                actor="mia.graph.tool",
+                resource=node.id,
+                description=f"{tool_name}: {previous_output}",
+                trace_id=trace_id,
+            )
+        )
+        self.decision_log.append_policy_decision(decision)
+        if decision.decision != PolicyDecisionType.ALLOW:
+            self._emit(
+                stream,
+                GraphEvent(
+                    run_id=run_id,
+                    trace_id=trace_id,
+                    event_type=GraphEventType.APPROVAL_REQUIRED,
+                    node_id=node.id,
+                    message=f"Tool policy decision: {decision.decision.value}",
+                    payload={
+                        "decision": decision.decision.value,
+                        "action_class": action_class.value,
+                        "tool_name": tool_name,
+                    },
+                ),
+                event_sink=event_sink,
+            )
+            return f"tool_blocked:{decision.decision.value}:{action_class.value}", True
+        return f"tool_mock:{tool_name}:{action_class.value}", False
 
     def _approval_node(
         self,

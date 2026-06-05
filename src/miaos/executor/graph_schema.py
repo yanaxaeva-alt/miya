@@ -10,6 +10,8 @@ class NodeType(StrEnum):
 
     INPUT = "input"
     LLM = "llm"
+    TOOL = "tool"
+    MEMORY = "memory"
     CRITIC = "critic"
     APPROVAL = "approval"
     OUTPUT = "output"

@@ -1,6 +1,7 @@
 import './App.css'
 import type { ReactNode } from 'react'
 import { useEffect, useMemo, useState } from 'react'
+import GraphStudio from './GraphStudio'
 
 type ApiHealth = {
   status: string
@@ -154,12 +155,7 @@ function renderPanel(
         />
       )
     case 'Graph Studio':
-      return (
-        <Placeholder
-          title="Graph canvas"
-          text="The next slice connects this shell to graph validation, run events, and active node highlighting."
-        />
-      )
+      return <GraphStudio apiBaseUrl={API_BASE_URL} />
     case 'Run Console':
       return (
         <Placeholder

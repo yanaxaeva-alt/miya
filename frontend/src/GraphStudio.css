@@ -1,0 +1,165 @@
+.graph-studio {
+  display: grid;
+  gap: 18px;
+}
+
+.graph-toolbar,
+.graph-actions,
+.node-palette,
+.graph-bottom {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.graph-toolbar {
+  justify-content: space-between;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: var(--panel);
+  padding: 14px;
+}
+
+.graph-studio button,
+.graph-studio input,
+.graph-studio select,
+.graph-studio textarea {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text-h);
+  font: inherit;
+  padding: 9px 11px;
+}
+
+.graph-studio button {
+  cursor: pointer;
+}
+
+.graph-studio button:hover {
+  border-color: var(--accent-border);
+}
+
+.graph-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 18px;
+}
+
+.graph-canvas,
+.graph-inspector,
+.graph-bottom article {
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+}
+
+.graph-canvas {
+  min-height: 560px;
+  overflow: hidden;
+}
+
+.graph-inspector {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  padding: 18px;
+}
+
+.graph-inspector label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.graph-inspector textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.saved-graph {
+  text-align: left;
+}
+
+.studio-node {
+  display: grid;
+  gap: 8px;
+  min-width: 150px;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--text-h);
+  padding: 12px;
+  box-shadow: var(--shadow);
+}
+
+.studio-node.active {
+  border-color: var(--accent);
+  outline: 3px solid var(--accent-bg);
+}
+
+.studio-node small {
+  display: block;
+  color: var(--muted);
+}
+
+.studio-node p {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.blocked-badge {
+  width: fit-content;
+  border-radius: 999px;
+  background: rgba(239, 68, 68, 0.14);
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  padding: 4px 8px;
+  text-transform: uppercase;
+}
+
+.graph-bottom {
+  align-items: stretch;
+}
+
+.graph-bottom article {
+  flex: 1 1 280px;
+  max-height: 340px;
+  overflow: auto;
+  padding: 18px;
+}
+
+.event-log {
+  display: grid;
+  gap: 8px;
+}
+
+.event-log div {
+  display: grid;
+  grid-template-columns: 140px 90px 1fr;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
+}
+
+.event-log span,
+.event-log small {
+  color: var(--muted);
+}
+
+.graph-bottom pre {
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+@media (max-width: 1100px) {
+  .graph-layout {
+    grid-template-columns: 1fr;
+  }
+}

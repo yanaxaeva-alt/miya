@@ -11,6 +11,7 @@ from miaos.executor import GraphEventType
 from miaos.models import InferenceRequest, InferenceResponse, MockModelProvider
 
 HTTP_OK = 200
+HTTP_BAD_REQUEST = 400
 PROVIDER_DELAY_SECONDS = 0.2
 LIVE_RUN_ID = "run_live_test"
 
@@ -100,6 +101,30 @@ def test_api_graph_validate_and_run_with_websocket_events(tmp_path: Path) -> Non
         first_event = websocket.receive_json()
 
     assert first_event["event_type"] == "run_started"
+
+
+def test_api_graph_save_and_load_roundtrip(tmp_path: Path) -> None:
+    """Graph save/load endpoints validate and persist specs safely."""
+    client = _client(tmp_path)
+
+    save_response = client.put("/graphs/example.json", json={"graph": _graph_payload()})
+    list_response = client.get("/graphs")
+    load_response = client.get("/graphs/example.json")
+
+    assert save_response.status_code == HTTP_OK
+    assert save_response.json()["saved"] is True
+    assert list_response.json() == ["example.json"]
+    assert load_response.status_code == HTTP_OK
+    assert load_response.json()["graph_id"] == "api-graph"
+
+
+def test_api_graph_save_rejects_path_traversal(tmp_path: Path) -> None:
+    """Saved graph names cannot escape the graph directory."""
+    client = _client(tmp_path)
+
+    response = client.put("/graphs/escape..json", json={"graph": _graph_payload()})
+
+    assert response.status_code == HTTP_BAD_REQUEST
 
 
 def test_api_websocket_streams_events_while_run_is_executing(tmp_path: Path) -> None:

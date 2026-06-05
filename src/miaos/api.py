@@ -113,6 +113,12 @@ class GraphValidatePayload(BaseModel):
     graph: dict[str, Any]
 
 
+class GraphSavePayload(BaseModel):
+    """Request body for graph save/load."""
+
+    graph: dict[str, Any]
+
+
 class GraphRunPayload(BaseModel):
     """Request body for graph execution."""
 
@@ -187,6 +193,23 @@ def create_app(state: MiaOSApiState | None = None) -> FastAPI:
         """List saved graph filenames."""
         return sorted(path.name for path in api_state.graph_dir.glob("*.json"))
 
+    @app.get("/graphs/{graph_name}")
+    def load_graph(graph_name: str) -> dict[str, Any]:
+        """Load a saved graph JSON document."""
+        graph_path = _safe_graph_path(api_state.graph_dir, graph_name)
+        if not graph_path.exists():
+            raise HTTPException(status_code=404, detail="graph not found")
+        raw_graph = graph_path.read_text(encoding="utf-8")
+        return AgentGraphSpec.model_validate_json(raw_graph).model_dump(mode="json")
+
+    @app.put("/graphs/{graph_name}")
+    def save_graph(graph_name: str, payload: GraphSavePayload) -> dict[str, Any]:
+        """Validate and save graph JSON."""
+        graph = AgentGraphSpec.model_validate(payload.graph)
+        graph_path = _safe_graph_path(api_state.graph_dir, graph_name)
+        graph_path.write_text(f"{graph.model_dump_json(indent=2)}\n", encoding="utf-8")
+        return {"saved": True, "graph": graph.model_dump(mode="json"), "name": graph_path.name}
+
     @app.post("/graphs/validate")
     def validate_graph(payload: GraphValidatePayload) -> dict[str, Any]:
         """Validate graph JSON."""
@@ -252,6 +275,21 @@ def create_app(state: MiaOSApiState | None = None) -> FastAPI:
 def _dump_profile_yaml(profile: dict[str, Any]) -> str:
     """Serialize profile data without adding a public YAML dependency to API callers."""
     return yaml.safe_dump(profile, sort_keys=False, allow_unicode=True)
+
+
+def _safe_graph_path(graph_dir: Path, graph_name: str) -> Path:
+    """Return a saved graph path, rejecting traversal and unsafe names."""
+    name = graph_name if graph_name.endswith(".json") else f"{graph_name}.json"
+    allowed_chars = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789._-")
+    if not name or any(char not in allowed_chars for char in name) or ".." in name:
+        raise HTTPException(status_code=400, detail="invalid graph name")
+    path = (graph_dir / name).resolve(strict=False)
+    graph_root = graph_dir.resolve(strict=False)
+    try:
+        path.relative_to(graph_root)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail="invalid graph name") from exc
+    return path
 
 
 def _replay_events(api_state: MiaOSApiState, run_id: str) -> list[GraphEvent]:
