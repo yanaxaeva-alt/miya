@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 from miaos.api import MiaOSApiState, create_app
 
 HTTP_OK = 200
+VITE_DEV_ORIGIN = "http://127.0.0.1:5173"
 
 
 def _client(tmp_path: Path) -> TestClient:
@@ -39,6 +40,20 @@ def test_api_health(tmp_path: Path) -> None:
 
     assert response.status_code == HTTP_OK
     assert response.json() == {"status": "ok"}
+
+
+def test_api_allows_vite_dev_origin(tmp_path: Path) -> None:
+    """CORS allows the local Vite frontend to call the API directly."""
+    response = _client(tmp_path).options(
+        "/health",
+        headers={
+            "Origin": VITE_DEV_ORIGIN,
+            "Access-Control-Request-Method": "GET",
+        },
+    )
+
+    assert response.status_code == HTTP_OK
+    assert response.headers["access-control-allow-origin"] == VITE_DEV_ORIGIN
 
 
 def test_api_model_list_and_register(tmp_path: Path) -> None:
