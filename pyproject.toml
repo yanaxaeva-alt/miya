@@ -60,3 +60,6 @@ packages = ["miaos"]
 [tool.pytest.ini_options]
 addopts = "-q"
 testpaths = ["tests"]
+markers = [
+    "eval: deterministic Quality Lab MVP tests",
+]
