@@ -203,6 +203,55 @@ def test_safety_check_command_evaluates_and_logs_action(tmp_path: Path) -> None:
     assert "policy_decision" in log_path.read_text(encoding="utf-8")
 
 
+def test_tool_list_command_shows_sandbox_tools(tmp_path: Path) -> None:
+    """The tool list command shows the sandbox-only tool registry."""
+    runner = CliRunner()
+
+    result = runner.invoke(
+        app,
+        [
+            "tool",
+            "list",
+            "--sandbox-root",
+            str(tmp_path / "sandbox"),
+            "--log",
+            str(tmp_path / "decisions.jsonl"),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "read_file_sandbox" in result.output
+    assert "write_file_sandbox" in result.output
+    assert "web_search_mock" in result.output
+    assert "create_draft" in result.output
+
+
+def test_tool_run_command_executes_create_draft(tmp_path: Path) -> None:
+    """The tool run command executes an allowed draft action and logs it."""
+    runner = CliRunner()
+    log_path = tmp_path / "decisions.jsonl"
+
+    result = runner.invoke(
+        app,
+        [
+            "tool",
+            "run",
+            "create_draft",
+            "--args-json",
+            '{"title":"Hello","body":"Draft body"}',
+            "--sandbox-root",
+            str(tmp_path / "sandbox"),
+            "--log",
+            str(log_path),
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert '"status":"executed"' in result.output.replace(" ", "")
+    assert '"published":false' in result.output.replace(" ", "")
+    assert "tool_call" in log_path.read_text(encoding="utf-8")
+
+
 def test_chat_command_runs_mock_provider_with_persona(tmp_path: Path) -> None:
     """The chat command runs the mock provider against a created persona package."""
     runner = CliRunner()

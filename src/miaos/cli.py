@@ -1,5 +1,6 @@
 """Command-line interface for MiaOS Builder."""
 
+import json
 from pathlib import Path
 from typing import Annotated
 
@@ -28,6 +29,7 @@ from miaos.persona import (
 from miaos.runtime import RuntimeProfileError, list_runtime_profiles, load_runtime_profile
 from miaos.runtime.chat import ChatSession
 from miaos.safety import ActionRequest, PolicyGate
+from miaos.tools import ToolInputError, ToolRegistry
 
 app = typer.Typer(
     add_completion=False,
@@ -41,14 +43,17 @@ model_app = typer.Typer(help="Inspect model provider and registry state.")
 persona_app = typer.Typer(help="Create, inspect, and validate `.mia` persona packages.")
 safety_app = typer.Typer(help="Evaluate action requests through the Policy Gate.")
 graph_app = typer.Typer(help="Validate and run AgentGraph specifications.")
+tool_app = typer.Typer(help="Run sandbox-only tools through Policy Gate.")
 app.add_typer(runtime_app, name="runtime")
 app.add_typer(model_app, name="model")
 app.add_typer(persona_app, name="persona")
 app.add_typer(safety_app, name="safety")
 app.add_typer(graph_app, name="graph")
+app.add_typer(tool_app, name="tool")
 DEFAULT_MODEL_DB_PATH = Path(".miaos") / "models.sqlite3"
 DEFAULT_DECISION_LOG_PATH = Path(".miaos") / "decisions.jsonl"
 DEFAULT_CHECKPOINT_DB_PATH = Path(".miaos") / "checkpoints.sqlite3"
+DEFAULT_SANDBOX_ROOT = Path(".miaos") / "sandbox"
 
 
 def _version_callback(value: bool) -> None:
@@ -278,6 +283,64 @@ def safety_check(
     decision = PolicyGate().evaluate(request)
     DecisionLog(log_path).append_policy_decision(decision)
     console.print(decision.model_dump_json(indent=2))
+
+
+@tool_app.command("list")
+def tool_list(
+    sandbox_root: Annotated[
+        Path,
+        typer.Option("--sandbox-root", help="Sandbox root for path-scoped tools."),
+    ] = DEFAULT_SANDBOX_ROOT,
+    log_path: Annotated[
+        Path,
+        typer.Option("--log", help="Path to append decisions.jsonl events."),
+    ] = DEFAULT_DECISION_LOG_PATH,
+) -> None:
+    """List sandbox-only tools."""
+    registry = ToolRegistry(sandbox_root=sandbox_root, decision_log=DecisionLog(log_path))
+    table = Table(title="Sandbox tools")
+    table.add_column("Name")
+    table.add_column("Action")
+    table.add_column("Description")
+    for spec in registry.list_tools():
+        table.add_row(spec.name, spec.action_class.value, spec.description)
+    console.print(table)
+
+
+@tool_app.command("run")
+def tool_run(
+    tool_name: Annotated[str, typer.Argument(help="Tool name to execute.")],
+    args_json: Annotated[
+        str,
+        typer.Option("--args-json", help="Tool arguments as a JSON object."),
+    ],
+    sandbox_root: Annotated[
+        Path,
+        typer.Option("--sandbox-root", help="Sandbox root for path-scoped tools."),
+    ] = DEFAULT_SANDBOX_ROOT,
+    log_path: Annotated[
+        Path,
+        typer.Option("--log", help="Path to append decisions.jsonl events."),
+    ] = DEFAULT_DECISION_LOG_PATH,
+) -> None:
+    """Run a sandbox tool through Policy Gate and append audit events."""
+    try:
+        raw_arguments = json.loads(args_json)
+    except json.JSONDecodeError as exc:
+        error_console.print(f"Error: invalid --args-json: {exc}", style="red")
+        raise typer.Exit(code=1) from exc
+    if not isinstance(raw_arguments, dict):
+        error_console.print("Error: --args-json must decode to a JSON object", style="red")
+        raise typer.Exit(code=1)
+
+    arguments = dict[str, object](raw_arguments)
+    registry = ToolRegistry(sandbox_root=sandbox_root, decision_log=DecisionLog(log_path))
+    try:
+        result = registry.run(tool_name, arguments)
+    except ToolInputError as exc:
+        error_console.print(f"Error: {exc}", style="red")
+        raise typer.Exit(code=1) from exc
+    console.print(result.model_dump_json(indent=2))
 
 
 @app.command("chat")
