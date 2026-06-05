@@ -14,7 +14,7 @@ lint: setup
 	@cd frontend && npm run lint
 
 typecheck: setup
-	@uv run mypy
+	@uv run mypy .
 	@cd frontend && npm run build
 
 check: lint typecheck test
