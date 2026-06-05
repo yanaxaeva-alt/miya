@@ -1,6 +1,9 @@
 """Local FastAPI backend for the future desktop editor."""
 
+import asyncio
+from collections.abc import Sequence
 from pathlib import Path
+from threading import Condition
 from typing import Any
 
 import yaml
@@ -8,8 +11,7 @@ from fastapi import FastAPI, HTTPException, WebSocket
 from pydantic import BaseModel, Field
 
 from miaos.executor import AgentGraphSpec, CheckpointStore, GraphEvent, GraphRunner
-from miaos.models import ModelManager, ModelRole
-from miaos.models.providers import MockModelProvider
+from miaos.models import MockModelProvider, ModelManager, ModelProvider, ModelRole
 from miaos.models.registry import ModelNotFoundError
 from miaos.observability import DecisionLog
 from miaos.persona import (
@@ -19,19 +21,67 @@ from miaos.persona import (
 )
 from miaos.runtime import list_runtime_profiles, load_runtime_profile
 
+TERMINAL_EVENT_TYPES = {"run_completed", "run_stopped"}
+
+
+class RunEventHub:
+    """Thread-safe in-process event hub for live graph run WebSockets."""
+
+    def __init__(self) -> None:
+        """Create an empty event hub."""
+        self._condition = Condition()
+        self._events: dict[str, list[GraphEvent]] = {}
+        self._terminal_runs: set[str] = set()
+
+    def publish(self, event: GraphEvent) -> None:
+        """Publish one event and wake subscribers."""
+        with self._condition:
+            self._events.setdefault(event.run_id, []).append(event)
+            if event.event_type.value in TERMINAL_EVENT_TYPES:
+                self._terminal_runs.add(event.run_id)
+            self._condition.notify_all()
+
+    def events_after(self, run_id: str, offset: int) -> list[GraphEvent]:
+        """Return events after an offset."""
+        with self._condition:
+            return list(self._events.get(run_id, [])[offset:])
+
+    def is_terminal(self, run_id: str) -> bool:
+        """Return whether a terminal event has been published for a run."""
+        with self._condition:
+            return run_id in self._terminal_runs
+
+    def wait_for_events(
+        self,
+        run_id: str,
+        offset: int,
+        *,
+        timeout_seconds: float = 30.0,
+    ) -> tuple[list[GraphEvent], bool]:
+        """Block until new events or a terminal state is available."""
+        with self._condition:
+            self._condition.wait_for(
+                lambda: len(self._events.get(run_id, [])) > offset
+                or run_id in self._terminal_runs,
+                timeout=timeout_seconds,
+            )
+            return list(self._events.get(run_id, [])[offset:]), run_id in self._terminal_runs
+
 
 class MiaOSApiState:
     """Mutable backend state for the local API."""
 
-    def __init__(self, base_dir: Path) -> None:
+    def __init__(self, base_dir: Path, *, provider: ModelProvider | None = None) -> None:
         """Create API state rooted under a local data directory."""
         self.base_dir = base_dir
         self.model_manager = ModelManager.from_path(base_dir / "models.sqlite3")
         self.decision_log = DecisionLog(base_dir / "decisions.jsonl")
         self.checkpoint_store = CheckpointStore(base_dir / "checkpoints.sqlite3")
+        self.provider = provider or MockModelProvider()
         self.persona_dir = base_dir / "personas"
         self.graph_dir = base_dir / "graphs"
         self.run_events: dict[str, list[GraphEvent]] = {}
+        self.run_event_hub = RunEventHub()
         self.persona_dir.mkdir(parents=True, exist_ok=True)
         self.graph_dir.mkdir(parents=True, exist_ok=True)
 
@@ -68,6 +118,7 @@ class GraphRunPayload(BaseModel):
 
     graph: dict[str, Any]
     input_text: str
+    run_id: str | None = None
 
 
 def create_app(state: MiaOSApiState | None = None) -> FastAPI:
@@ -147,21 +198,42 @@ def create_app(state: MiaOSApiState | None = None) -> FastAPI:
         """Run graph JSON with the mock provider."""
         graph = AgentGraphSpec.model_validate(payload.graph)
         runner = GraphRunner(
-            provider=MockModelProvider(),
+            provider=api_state.provider,
             checkpoint_store=api_state.checkpoint_store,
             decision_log=api_state.decision_log,
         )
-        run = runner.run(graph, input_text=payload.input_text)
+        run = runner.run(
+            graph,
+            input_text=payload.input_text,
+            run_id=payload.run_id,
+            event_sink=api_state.run_event_hub.publish,
+        )
         api_state.run_events[run.run_id] = run.events
         return run.model_dump(mode="json")
 
     @app.websocket("/runs/{run_id}/events")
     async def run_events(websocket: WebSocket, run_id: str) -> None:
-        """Send stored run events over a WebSocket and close."""
+        """Stream live run events, falling back to replay for completed runs."""
         await websocket.accept()
-        events = api_state.run_events.get(run_id) or api_state.checkpoint_store.list_events(run_id)
-        for event in events:
-            await websocket.send_json(event.model_dump(mode="json"))
+        replay_events = _replay_events(api_state, run_id)
+        if replay_events:
+            await _send_events(websocket, replay_events)
+            if _has_terminal_event(replay_events):
+                await websocket.close()
+                return
+
+        offset = len(replay_events)
+        while True:
+            events, terminal = await asyncio.to_thread(
+                api_state.run_event_hub.wait_for_events,
+                run_id,
+                offset,
+            )
+            if events:
+                await _send_events(websocket, events)
+                offset += len(events)
+            if terminal and not api_state.run_event_hub.events_after(run_id, offset):
+                break
         await websocket.close()
 
     @app.get("/traces/{trace_id}")
@@ -180,6 +252,25 @@ def create_app(state: MiaOSApiState | None = None) -> FastAPI:
 def _dump_profile_yaml(profile: dict[str, Any]) -> str:
     """Serialize profile data without adding a public YAML dependency to API callers."""
     return yaml.safe_dump(profile, sort_keys=False, allow_unicode=True)
+
+
+def _replay_events(api_state: MiaOSApiState, run_id: str) -> list[GraphEvent]:
+    """Return replay events known before a WebSocket subscribes."""
+    hub_events = api_state.run_event_hub.events_after(run_id, 0)
+    if hub_events:
+        return hub_events
+    return api_state.run_events.get(run_id) or api_state.checkpoint_store.list_events(run_id)
+
+
+async def _send_events(websocket: WebSocket, events: Sequence[GraphEvent]) -> None:
+    """Send graph events as JSON messages."""
+    for event in events:
+        await websocket.send_json(event.model_dump(mode="json"))
+
+
+def _has_terminal_event(events: Sequence[GraphEvent]) -> bool:
+    """Return whether a sequence includes a terminal event."""
+    return any(event.event_type.value in TERMINAL_EVENT_TYPES for event in events)
 
 
 app = create_app()

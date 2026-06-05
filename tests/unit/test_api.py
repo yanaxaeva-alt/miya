@@ -1,12 +1,27 @@
 """Tests for the local FastAPI backend."""
 
 from pathlib import Path
+from threading import Thread
+from time import sleep
 
 from fastapi.testclient import TestClient
 
 from miaos.api import MiaOSApiState, create_app
+from miaos.executor import GraphEventType
+from miaos.models import InferenceRequest, InferenceResponse, MockModelProvider
 
 HTTP_OK = 200
+PROVIDER_DELAY_SECONDS = 0.2
+LIVE_RUN_ID = "run_live_test"
+
+
+class DelayedMockProvider(MockModelProvider):
+    """Mock provider that pauses generation to expose live WebSocket events."""
+
+    def generate(self, request: InferenceRequest) -> InferenceResponse:
+        """Delay generation and then return the deterministic mock response."""
+        sleep(PROVIDER_DELAY_SECONDS)
+        return super().generate(request)
 
 
 def _client(tmp_path: Path) -> TestClient:
@@ -85,6 +100,43 @@ def test_api_graph_validate_and_run_with_websocket_events(tmp_path: Path) -> Non
         first_event = websocket.receive_json()
 
     assert first_event["event_type"] == "run_started"
+
+
+def test_api_websocket_streams_events_while_run_is_executing(tmp_path: Path) -> None:
+    """WebSocket subscribers receive events live, before the run response completes."""
+    client = TestClient(create_app(MiaOSApiState(tmp_path, provider=DelayedMockProvider())))
+    responses: list[dict[str, object]] = []
+
+    def run_graph() -> None:
+        response = client.post(
+            "/graphs/run",
+            json={
+                "graph": _graph_payload(),
+                "input_text": "draft a post",
+                "run_id": LIVE_RUN_ID,
+            },
+        )
+        responses.append(response.json())
+
+    with client.websocket_connect(f"/runs/{LIVE_RUN_ID}/events") as websocket:
+        thread = Thread(target=run_graph)
+        thread.start()
+        first_event = websocket.receive_json()
+        still_running_after_first_live_event = thread.is_alive()
+        received_event_types = [first_event["event_type"]]
+        while received_event_types[-1] not in {
+            GraphEventType.RUN_COMPLETED.value,
+            GraphEventType.RUN_STOPPED.value,
+        }:
+            received_event_types.append(websocket.receive_json()["event_type"])
+        thread.join()
+
+    assert still_running_after_first_live_event is True
+    assert received_event_types[0] == GraphEventType.RUN_STARTED.value
+    assert received_event_types[-1] == GraphEventType.RUN_STOPPED.value
+    assert GraphEventType.NODE_STARTED.value in received_event_types
+    assert GraphEventType.APPROVAL_REQUIRED.value in received_event_types
+    assert responses[0]["run_id"] == LIVE_RUN_ID
 
 
 def test_api_trace_endpoint_returns_decision_events(tmp_path: Path) -> None:

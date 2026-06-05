@@ -1,5 +1,6 @@
 """Bounded AgentGraph MVP runner."""
 
+from collections.abc import Callable
 from uuid import uuid4
 
 from pydantic import BaseModel, Field
@@ -42,55 +43,73 @@ class GraphRunner:
         self.decision_log = decision_log
         self.policy_gate = policy_gate or PolicyGate()
 
-    def run(self, spec: AgentGraphSpec, *, input_text: str) -> GraphRun:
+    def run(
+        self,
+        spec: AgentGraphSpec,
+        *,
+        input_text: str,
+        run_id: str | None = None,
+        trace_id: str | None = None,
+        event_sink: Callable[[GraphEvent], None] | None = None,
+    ) -> GraphRun:
         """Execute a graph until completion or approval stop."""
         order = topological_order(spec)
-        run_id = f"run_{uuid4().hex}"
-        trace_id = new_trace_id()
+        resolved_run_id = run_id or f"run_{uuid4().hex}"
+        resolved_trace_id = trace_id or new_trace_id()
         stream = EventStream()
         outputs: dict[str, str] = {}
 
         self._emit(
             stream,
             GraphEvent(
-                run_id=run_id,
-                trace_id=trace_id,
+                run_id=resolved_run_id,
+                trace_id=resolved_trace_id,
                 event_type=GraphEventType.RUN_STARTED,
                 message=f"Graph run started: {spec.name}",
             ),
+            event_sink=event_sink,
         )
 
         status = "completed"
         for node_id in order:
             node = spec.node_by_id(node_id)
-            self._emit_node_started(stream, run_id=run_id, trace_id=trace_id, node=node)
+            self._emit_node_started(
+                stream,
+                run_id=resolved_run_id,
+                trace_id=resolved_trace_id,
+                node=node,
+                event_sink=event_sink,
+            )
             node_output, should_stop = self._execute_node(
                 node,
                 input_text=input_text,
                 previous_output=self._previous_output(spec, node_id, outputs, input_text),
-                run_id=run_id,
-                trace_id=trace_id,
+                run_id=resolved_run_id,
+                trace_id=resolved_trace_id,
                 stream=stream,
+                event_sink=event_sink,
             )
             outputs[node_id] = node_output
             self._emit_node_completed(
                 stream,
-                run_id=run_id,
-                trace_id=trace_id,
+                run_id=resolved_run_id,
+                trace_id=resolved_trace_id,
                 node=node,
                 output=node_output,
+                event_sink=event_sink,
             )
             if should_stop:
                 status = "waiting_for_approval"
                 self._emit(
                     stream,
                     GraphEvent(
-                        run_id=run_id,
-                        trace_id=trace_id,
+                        run_id=resolved_run_id,
+                        trace_id=resolved_trace_id,
                         event_type=GraphEventType.RUN_STOPPED,
                         node_id=node.id,
                         message="Graph stopped before external action execution",
                     ),
+                    event_sink=event_sink,
                 )
                 break
 
@@ -98,16 +117,17 @@ class GraphRunner:
             self._emit(
                 stream,
                 GraphEvent(
-                    run_id=run_id,
-                    trace_id=trace_id,
+                        run_id=resolved_run_id,
+                        trace_id=resolved_trace_id,
                     event_type=GraphEventType.RUN_COMPLETED,
                     message="Graph run completed",
                 ),
+                    event_sink=event_sink,
             )
 
         return GraphRun(
-            run_id=run_id,
-            trace_id=trace_id,
+            run_id=resolved_run_id,
+            trace_id=resolved_trace_id,
             graph_id=spec.graph_id,
             status=status,
             events=stream.events,
@@ -123,6 +143,7 @@ class GraphRunner:
         run_id: str,
         trace_id: str,
         stream: EventStream,
+        event_sink: Callable[[GraphEvent], None] | None = None,
     ) -> tuple[str, bool]:
         """Execute one graph node."""
         if node.type == NodeType.INPUT:
@@ -145,6 +166,7 @@ class GraphRunner:
                 run_id=run_id,
                 trace_id=trace_id,
                 stream=stream,
+                event_sink=event_sink,
             )
         if node.type == NodeType.OUTPUT:
             return previous_output, False
@@ -159,6 +181,7 @@ class GraphRunner:
         run_id: str,
         trace_id: str,
         stream: EventStream,
+        event_sink: Callable[[GraphEvent], None] | None = None,
     ) -> tuple[str, bool]:
         """Create an approval request instead of executing an external action."""
         raw_action_class = str(node.config.get("action_class", ActionClass.PUBLISH.value))
@@ -183,6 +206,7 @@ class GraphRunner:
                 message=f"Approval decision: {decision.decision.value}",
                 payload={"decision": decision.decision.value, "action_class": action_class.value},
             ),
+            event_sink=event_sink,
         )
         should_stop = decision.decision != PolicyDecisionType.ALLOW
         return f"approval_request:{decision.decision.value}:{action_class.value}", should_stop
@@ -199,6 +223,7 @@ class GraphRunner:
         run_id: str,
         trace_id: str,
         node: NodeSpec,
+        event_sink: Callable[[GraphEvent], None] | None = None,
     ) -> None:
         """Emit a node-started event."""
         self._emit(
@@ -210,6 +235,7 @@ class GraphRunner:
                 node_id=node.id,
                 message=f"Node started: {node.id}",
             ),
+            event_sink=event_sink,
         )
 
     def _emit_node_completed(
@@ -220,6 +246,7 @@ class GraphRunner:
         trace_id: str,
         node: NodeSpec,
         output: str,
+        event_sink: Callable[[GraphEvent], None] | None = None,
     ) -> None:
         """Emit a node-completed event."""
         self._emit(
@@ -232,12 +259,21 @@ class GraphRunner:
                 message=f"Node completed: {node.id}",
                 payload={"output": output[:EVENT_OUTPUT_PREVIEW_CHARS]},
             ),
+            event_sink=event_sink,
         )
 
-    def _emit(self, stream: EventStream, event: GraphEvent) -> None:
+    def _emit(
+        self,
+        stream: EventStream,
+        event: GraphEvent,
+        *,
+        event_sink: Callable[[GraphEvent], None] | None = None,
+    ) -> None:
         """Emit and persist an event."""
         stream.emit(event)
         self.checkpoint_store.append_event(event)
+        if event_sink is not None:
+            event_sink(event)
 
     @staticmethod
     def _previous_output(
