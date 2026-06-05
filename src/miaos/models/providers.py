@@ -1,11 +1,15 @@
 """Model provider interfaces and lightweight implementations."""
 
+import os
+from collections.abc import Callable
+from importlib import import_module
 from importlib.util import find_spec
-from typing import Protocol, runtime_checkable
+from typing import Protocol, cast, runtime_checkable
 
 from pydantic import BaseModel, Field
 
 type JsonScalar = bool | int | float | str | None
+MLX_LOAD_RETURN_SIZE = 2
 
 
 class InferenceRequest(BaseModel):
@@ -77,12 +81,12 @@ class MockModelProvider:
 
 
 class MLXModelProvider:
-    """MLX provider interface wrapper.
+    """Optional MLX provider backed by `mlx_lm` when installed."""
 
-    This class deliberately does not download or start models. It only reports
-    whether the optional MLX dependency is importable and provides a clear error
-    if generation is attempted before the real provider implementation is added.
-    """
+    def __init__(self, *, default_model_id: str | None = None) -> None:
+        """Create an MLX provider with an optional default model id."""
+        self.default_model_id = default_model_id or os.getenv("MIAOS_MLX_MODEL")
+        self._model_cache: dict[str, tuple[object, object]] = {}
 
     @property
     def name(self) -> str:
@@ -93,13 +97,98 @@ class MLXModelProvider:
         """Return whether MLX inference dependencies are importable."""
         return find_spec("mlx_lm") is not None
 
-    def generate(self, _request: InferenceRequest) -> InferenceResponse:
-        """Fail explicitly until real MLX inference is implemented."""
+    def generate(self, request: InferenceRequest) -> InferenceResponse:
+        """Generate text through `mlx_lm` without changing the provider protocol."""
         if not self.is_available():
             msg = "MLX provider is unavailable: install mlx-lm to enable local inference"
             raise RuntimeError(msg)
-        msg = "MLX provider wrapper is available, but real generation is not implemented yet"
-        raise NotImplementedError(msg)
+
+        model_id = request.model_id or self.default_model_id
+        if not model_id:
+            msg = (
+                "MLX provider is available, but no model_id was provided; "
+                "set request.model_id or MIAOS_MLX_MODEL"
+            )
+            raise RuntimeError(msg)
+
+        model, tokenizer = self._load_model(model_id)
+        prompt = self._prompt_from_request(request)
+        text = self._mlx_generate(
+            model=model,
+            tokenizer=tokenizer,
+            prompt=prompt,
+            max_tokens=request.max_tokens,
+            temperature=request.temperature,
+        )
+        return InferenceResponse(
+            text=text,
+            provider_name=self.name,
+            model_id=model_id,
+            trace_id=request.trace_id,
+            metadata={
+                "mlx_lm": True,
+                "max_tokens": request.max_tokens,
+                "temperature": request.temperature,
+            },
+        )
+
+    def _load_model(self, model_id: str) -> tuple[object, object]:
+        """Load and cache an MLX model/tokenizer pair."""
+        cached = self._model_cache.get(model_id)
+        if cached is not None:
+            return cached
+
+        mlx_lm = import_module("mlx_lm")
+        load_fn = self._attribute_as_callable(mlx_lm, "load")
+        loaded = load_fn(model_id)
+        if not isinstance(loaded, tuple) or len(loaded) != MLX_LOAD_RETURN_SIZE:
+            msg = "mlx_lm.load must return a (model, tokenizer) tuple"
+            raise TypeError(msg)
+        model, tokenizer = loaded
+        bundle = (model, tokenizer)
+        self._model_cache[model_id] = bundle
+        return bundle
+
+    @staticmethod
+    def _mlx_generate(
+        *,
+        model: object,
+        tokenizer: object,
+        prompt: str,
+        max_tokens: int,
+        temperature: float,
+    ) -> str:
+        """Call `mlx_lm.generate` using the common keyword-compatible API."""
+        mlx_lm = import_module("mlx_lm")
+        generate_fn = MLXModelProvider._attribute_as_callable(mlx_lm, "generate")
+        raw_text = generate_fn(
+            model,
+            tokenizer,
+            prompt=prompt,
+            max_tokens=max_tokens,
+            temp=temperature,
+            verbose=False,
+        )
+        if not isinstance(raw_text, str):
+            msg = "mlx_lm.generate must return text"
+            raise TypeError(msg)
+        return raw_text
+
+    @staticmethod
+    def _prompt_from_request(request: InferenceRequest) -> str:
+        """Build the provider prompt while preserving optional system context."""
+        if request.system_prompt:
+            return f"{request.system_prompt}\n\n{request.prompt}"
+        return request.prompt
+
+    @staticmethod
+    def _attribute_as_callable(module: object, name: str) -> Callable[..., object]:
+        """Return a callable attribute from a dynamically imported module."""
+        attribute = getattr(module, name, None)
+        if not callable(attribute):
+            msg = f"mlx_lm.{name} is not callable"
+            raise TypeError(msg)
+        return cast("Callable[..., object]", attribute)
 
 
 def available_providers() -> list[ModelProvider]:
