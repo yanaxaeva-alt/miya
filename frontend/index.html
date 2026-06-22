@@ -1,13 +1,40 @@
 <!doctype html>
-<html lang="en">
+<html lang="ru">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>frontend</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <title>Miya Editor v1.0.0</title>
+    <link rel="stylesheet" href="/src/index.css" />
   </head>
   <body>
-    <div id="root"></div>
+    <noscript>
+      <p style="padding: 20px; background: #fee2e2;">Включите JavaScript для редактора Miya.</p>
+    </noscript>
+
+    <div class="miya-app">
+      <header class="miya-toolbar">
+        <div class="miya-toolbar-top">
+          <div class="miya-toolbar-brand">
+            <h1 class="miya-toolbar-title">Miya Editor</h1>
+            <span class="miya-run-badge miya-toolbar-version">v1.0.0</span>
+          </div>
+          <span id="miya-status" class="miya-toolbar-status">Загрузка редактора…</span>
+        </div>
+        <div class="miya-toolbar-actions">
+          <button type="button" id="miya-run" class="miya-btn miya-btn-run">Запустить</button>
+          <button type="button" id="miya-download" class="miya-btn">X6 JSON</button>
+          <button type="button" id="miya-miaos" class="miya-btn miya-btn-primary">MiaOS JSON</button>
+          <button type="button" id="miya-import" class="miya-btn">Загрузить JSON</button>
+          <button type="button" id="miya-clear" class="miya-btn miya-btn-danger">Очистить</button>
+          <input id="miya-file" type="file" accept=".json,application/json" hidden />
+        </div>
+      </header>
+
+      <div id="root"></div>
+    </div>
+
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

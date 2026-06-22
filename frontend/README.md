@@ -1,32 +1,48 @@
-# MiaOS Builder frontend
+# Miya Editor
 
-Vite + React + TypeScript editor skeleton for the local MiaOS Builder backend.
+React/Vite editor for the local MiaOS + AEON backend.
 
 ## Run
 
-```bash
-npm install
-npm run dev
-```
-
-The frontend expects the FastAPI backend at `http://127.0.0.1:8765` by default.
-Override with:
+From the repository root:
 
 ```bash
-VITE_API_BASE_URL=http://127.0.0.1:8765 npm run dev
+cd ~/Documents/miya/frontend
+pnpm install
+./scripts/start-miaos-backend.sh
+pnpm dev
 ```
 
-## Pages
+The editor runs on `http://localhost:5173` and proxies `/api/miaos/*` to the backend on `http://127.0.0.1:8000`.
 
-- Model Studio
-- Persona Studio
-- Graph Studio
-- Run Console
-- Trace Viewer
-- Approval Queue
+Quick backend smoke:
+
+```bash
+curl http://127.0.0.1:8000/health
+curl http://127.0.0.1:8000/api/status
+```
+
+If the toolbar says `Backend MiaOS offline`, start the backend from this monorepo path:
+
+```bash
+cd ~/Documents/miya/frontend
+./scripts/start-miaos-backend.sh
+```
+
+Do not start a second `pnpm dev` if `http://localhost:5173` is already open.
 
 ## Checks
 
 ```bash
-npm run build
+cd ~/Documents/miya/frontend
+pnpm exec tsc --noEmit
+pnpm run lint
+pnpm run build
+```
+
+Repository-level Python checks:
+
+```bash
+cd ~/Documents/miya
+uv run pytest
 ```
