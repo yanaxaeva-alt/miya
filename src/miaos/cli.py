@@ -16,6 +16,7 @@ from miaos.models import (
     ModelNotFoundError,
     ModelProvider,
     ModelRole,
+    default_provider_name,
     provider_infos,
 )
 from miaos.observability import DecisionLog
@@ -284,9 +285,9 @@ def safety_check(
 def chat(
     persona: Annotated[Path, typer.Option("--persona", help="Path to a `.mia` persona package.")],
     provider_name: Annotated[
-        str,
+        str | None,
         typer.Option("--provider", help="Model provider name: mock or mlx."),
-    ] = "mock",
+    ] = None,
     messages: Annotated[
         list[str] | None,
         typer.Option("--message", "-m", help="Message to send. Repeat for multiple turns."),
@@ -310,7 +311,7 @@ def chat(
         error_console.print(f"Error: {exc}", style="red")
         raise typer.Exit(code=1) from exc
 
-    provider = _provider_from_name(provider_name)
+    provider = _provider_from_name(provider_name or default_provider_name())
     session = ChatSession(
         persona=persona_package,
         provider=provider,
@@ -356,9 +357,9 @@ def graph_run(
     graph_path: Annotated[Path, typer.Argument(help="Path to an AgentGraph JSON file.")],
     input_text: Annotated[str, typer.Option("--input", help="Input text for the graph.")],
     provider_name: Annotated[
-        str,
+        str | None,
         typer.Option("--provider", help="Model provider name: mock or mlx."),
-    ] = "mock",
+    ] = None,
     log_path: Annotated[
         Path,
         typer.Option("--log", help="Path to append decisions.jsonl events."),
@@ -375,7 +376,7 @@ def graph_run(
         error_console.print(f"Error: invalid graph: {exc}", style="red")
         raise typer.Exit(code=1) from exc
     runner = GraphRunner(
-        provider=_provider_from_name(provider_name),
+        provider=_provider_from_name(provider_name or default_provider_name()),
         checkpoint_store=CheckpointStore(checkpoint_db),
         decision_log=DecisionLog(log_path),
     )

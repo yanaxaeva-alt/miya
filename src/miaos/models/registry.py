@@ -137,6 +137,19 @@ class ModelRegistry:
             raise ModelNotFoundError(model_id)
         return self.get(model_id)
 
+    def delete_by_repos(self, repos: Iterable[str]) -> int:
+        """Delete all records whose repo is in the provided set."""
+        repo_list = sorted(set(repos))
+        if not repo_list:
+            return 0
+        placeholders = ", ".join("?" for _ in repo_list)
+        with self._connect() as connection:
+            cursor = connection.execute(
+                f"DELETE FROM models WHERE repo IN ({placeholders})",  # noqa: S608
+                repo_list,
+            )
+        return int(cursor.rowcount)
+
     def _connect(self) -> sqlite3.Connection:
         """Open a SQLite connection with row mappings."""
         connection = sqlite3.connect(self.db_path)

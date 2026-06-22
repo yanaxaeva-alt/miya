@@ -5,6 +5,8 @@ from miaos.persona.package import (
     PersonaPackage,
     PersonaPackageError,
     create_persona_package,
+    export_persona_archive,
+    import_persona_archive,
     load_persona_package,
     validate_persona_package,
 )
@@ -26,6 +28,8 @@ __all__ = [
     "PersonaPackageError",
     "PersonalityGuard",
     "create_persona_package",
+    "export_persona_archive",
+    "import_persona_archive",
     "load_persona_package",
     "validate_persona_package",
 ]

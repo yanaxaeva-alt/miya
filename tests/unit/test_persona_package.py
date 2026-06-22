@@ -4,7 +4,10 @@ from pathlib import Path
 
 from miaos.persona import (
     PersonalityGuard,
+    PersonaPackageError,
     create_persona_package,
+    export_persona_archive,
+    import_persona_archive,
     load_persona_package,
     validate_persona_package,
 )
@@ -82,3 +85,37 @@ def test_personality_guard_builds_inference_context(tmp_path: Path) -> None:
     assert "Values: honesty, curiosity" in context
     assert "Model id: mock-test" in context
     assert "Autonomy ceiling: L3" in context
+
+
+def test_export_and_import_persona_archive_roundtrip(tmp_path: Path) -> None:
+    """Export/import preserves a validated persona package."""
+    profile = tmp_path / "persona.yaml"
+    source = tmp_path / "mia-source"
+    persona_dir = tmp_path / "personas"
+    _write_profile(profile)
+    create_persona_package(name="Mia", profile_path=profile, output_path=source)
+
+    archive = export_persona_archive(source)
+    imported = import_persona_archive(archive, persona_dir, package_id="mia-import")
+
+    assert imported.card.identity.name == "Mia"
+    assert (persona_dir / "mia-import" / "manifest.json").exists()
+    assert validate_persona_package(persona_dir / "mia-import").name == "Mia"
+
+
+def test_import_persona_archive_rejects_duplicate_without_overwrite(tmp_path: Path) -> None:
+    """Import refuses to overwrite an existing package by default."""
+    profile = tmp_path / "persona.yaml"
+    source = tmp_path / "mia-source"
+    persona_dir = tmp_path / "personas"
+    _write_profile(profile)
+    create_persona_package(name="Mia", profile_path=profile, output_path=source)
+    archive = export_persona_archive(source)
+    import_persona_archive(archive, persona_dir, package_id="mia")
+
+    try:
+        import_persona_archive(archive, persona_dir, package_id="mia")
+    except PersonaPackageError as exc:
+        assert "already exists" in str(exc)
+    else:
+        raise AssertionError("expected duplicate import to fail")

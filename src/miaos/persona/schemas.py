@@ -5,6 +5,8 @@ from uuid import uuid4
 
 from pydantic import BaseModel, Field, field_validator
 
+from miaos.models.providers import default_provider_name
+
 
 def generate_persona_id() -> str:
     """Generate a stable persona identifier."""
@@ -40,8 +42,8 @@ class PersonaCard(BaseModel):
 class ModelBinding(BaseModel):
     """Model binding metadata; weights are never stored in `.mia`."""
 
-    provider: str = Field(default="mock", min_length=1)
-    model_id: str = Field(default="mock-mia", min_length=1)
+    provider: str = Field(default_factory=default_provider_name, min_length=1)
+    model_id: str = Field(default="qwen3.5-8b", min_length=1)
     runtime_profile: str | None = None
     role_pool: dict[str, str] = Field(default_factory=dict)
 

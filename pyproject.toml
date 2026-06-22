@@ -6,6 +6,7 @@ readme = "docs/architecture/implementation_roadmap.md"
 requires-python = ">=3.12"
 dependencies = [
     "fastapi",
+    "python-multipart",
     "pydantic>=2",
     "pyyaml",
     "rich",
@@ -15,22 +16,27 @@ dependencies = [
 
 [project.scripts]
 miaos = "miaos.cli:app"
+aeon = "aeon.cli:app"
 
 [dependency-groups]
-dev = [
+  dev = [
     "httpx",
     "mypy",
     "pytest",
     "ruff",
     "types-PyYAML",
-]
+    "uvicorn[standard]",
+  ]
+  mlx = [
+    "mlx-lm",
+  ]
 
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/miaos"]
+packages = ["src/miaos", "src/aeon"]
 
 [tool.ruff]
 target-version = "py312"
@@ -47,16 +53,24 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "src/miaos/cli.py" = ["FBT001", "FBT002", "PLR0913"]
+"src/aeon/cli.py" = ["FBT001", "FBT002", "PLR0913"]
 "src/miaos/api.py" = ["C901"]
+"src/miaos/memory/store.py" = ["D102", "D107", "S101"]
 "src/miaos/models/manager.py" = ["PLR0913"]
+"src/miaos/models/providers.py" = ["ANN401", "PLC0415"]
 "src/miaos/models/registry.py" = ["S608"]
 "src/miaos/executor/runner.py" = ["PLR0913"]
-"tests/**/*.py" = ["S101"]
+"src/miaos/quality/runner.py" = ["PLR0913"]
+"src/miaos/safety/policy.py" = ["PLC0415"]
+"src/miaos/templates.py" = ["RUF001"]
+"src/aeon/**/*.py" = ["D100", "D101", "D102", "D103", "D107", "E501", "I001", "PLR2004", "RET504", "TRY004", "ARG002", "PLR0913"]
+"tests/unit/test_aeon*.py" = ["D103", "E501"]
+"tests/**/*.py" = ["ANN401", "EM101", "PLR2004", "PT017", "S101", "TRY003"]
 
 [tool.mypy]
 python_version = "3.12"
 strict = true
-packages = ["miaos"]
+packages = ["miaos", "aeon"]
 
 [tool.pytest.ini_options]
 addopts = "-q"

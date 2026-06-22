@@ -1,6 +1,10 @@
 """Directory-based `.mia` package create, load, and validation helpers."""
 
+import io
 import json
+import shutil
+import tempfile
+import zipfile
 from pathlib import Path
 from typing import Any
 
@@ -93,6 +97,60 @@ def load_persona_package(path: Path) -> PersonaPackage:
 def validate_persona_package(path: Path) -> PersonaManifest:
     """Validate a minimal `.mia` package and return its manifest."""
     return load_persona_package(path).manifest
+
+
+def export_persona_archive(path: Path) -> bytes:
+    """Zip a validated persona package directory for portable export."""
+    validate_persona_package(path)
+    buffer = io.BytesIO()
+    with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as archive:
+        for file_path in sorted(path.rglob("*")):
+            if file_path.is_file():
+                archive.write(file_path, arcname=file_path.relative_to(path).as_posix())
+    return buffer.getvalue()
+
+
+def import_persona_archive(
+    data: bytes,
+    persona_dir: Path,
+    *,
+    package_id: str | None = None,
+    overwrite: bool = False,
+) -> PersonaPackage:
+    """Import a zipped persona package into the persona directory."""
+    buffer = io.BytesIO(data)
+    if not zipfile.is_zipfile(buffer):
+        msg = "upload must be a .zip persona archive"
+        raise PersonaPackageError(msg)
+
+    buffer.seek(0)
+    with tempfile.TemporaryDirectory() as temp_dir:
+        temp_root = Path(temp_dir)
+        with zipfile.ZipFile(buffer) as archive:
+            archive.extractall(temp_root)
+        package_root = _find_package_root(temp_root)
+        load_persona_package(package_root)
+        target_id = package_id or package_root.name
+        target_path = persona_dir / target_id
+        if target_path.exists() and not overwrite:
+            msg = f"persona package {target_id!r} already exists"
+            raise PersonaPackageError(msg)
+        if target_path.exists():
+            shutil.rmtree(target_path)
+        persona_dir.mkdir(parents=True, exist_ok=True)
+        shutil.copytree(package_root, target_path)
+        return load_persona_package(target_path)
+
+
+def _find_package_root(extracted: Path) -> Path:
+    """Locate manifest.json inside an extracted archive."""
+    if (extracted / "manifest.json").exists():
+        return extracted
+    for child in sorted(extracted.iterdir()):
+        if child.is_dir() and (child / "manifest.json").exists():
+            return child
+    msg = "persona archive must contain manifest.json at root"
+    raise PersonaPackageError(msg)
 
 
 def _load_yaml_mapping(path: Path) -> dict[str, Any]:

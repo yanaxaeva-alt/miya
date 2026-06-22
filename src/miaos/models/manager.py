@@ -89,6 +89,10 @@ class ModelManager:
         """Set model lab certification metadata."""
         return self.registry.set_lab_cert(model_id, lab_cert)
 
+    def delete_by_repos(self, repos: list[str]) -> int:
+        """Delete model records for a known set of repository identifiers."""
+        return self.registry.delete_by_repos(repos)
+
     def select_model_for_profile(
         self,
         profile: RuntimeProfile,

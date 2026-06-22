@@ -4,7 +4,6 @@ from enum import StrEnum
 
 from pydantic import BaseModel
 
-from miaos.observability.tracing import new_trace_id
 from miaos.safety.actions import ActionClass, ActionRequest
 from miaos.safety.capabilities import CapabilityToken
 
@@ -60,6 +59,8 @@ class PolicyGate:
 
     def evaluate(self, request: ActionRequest) -> PolicyDecision:
         """Evaluate an action request before execution."""
+        from miaos.observability.tracing import new_trace_id
+
         trace_id = request.trace_id or new_trace_id()
         if request.action_class in DENIED_ALWAYS:
             return PolicyDecision(

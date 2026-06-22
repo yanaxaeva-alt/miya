@@ -11,8 +11,8 @@ values:
     - growth
     - autonomy
 model_binding:
-  provider: mock
-  model_id: mock-mia
+  provider: mlx
+  model_id: qwen3.5-8b
   runtime_profile: macbook_air_m4_32gb
 autonomy_contract:
   contract_id: supervised-default

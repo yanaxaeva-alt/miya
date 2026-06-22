@@ -111,3 +111,58 @@ def test_approval_node_stops_external_action(tmp_path: Path) -> None:
     assert run.status == "waiting_for_approval"
     assert run.outputs["Approval"] == "approval_request:require_approval:publish"
     assert DecisionLog(tmp_path / "decisions.jsonl").verify_integrity() is True
+
+
+def test_graph_run_resumes_after_approval(tmp_path: Path) -> None:
+    """Approved graphs continue through remaining nodes."""
+    runner = GraphRunner(
+        provider=MockModelProvider(),
+        checkpoint_store=CheckpointStore(tmp_path / "checkpoints.sqlite3"),
+        decision_log=DecisionLog(tmp_path / "decisions.jsonl"),
+    )
+    graph = _graph_with_approval()
+    initial = runner.run(graph, input_text="publish a post")
+
+    resumed = runner.resume(
+        graph,
+        input_text="publish a post",
+        outputs=dict(initial.outputs),
+        after_node_id="Approval",
+        run_id=initial.run_id,
+        trace_id=initial.trace_id,
+    )
+
+    assert initial.status == "waiting_for_approval"
+    assert resumed.status == "completed"
+    assert resumed.outputs["END"].startswith("approved:")
+    assert resumed.events[-1].event_type == GraphEventType.RUN_COMPLETED
+
+
+def test_graph_tool_node_executes_sandbox_mock(tmp_path: Path) -> None:
+    """Tool nodes invoke sandbox registry tools through the Policy Gate."""
+    runner = GraphRunner(
+        provider=MockModelProvider(),
+        checkpoint_store=CheckpointStore(tmp_path / "checkpoints.sqlite3"),
+        decision_log=DecisionLog(tmp_path / "decisions.jsonl"),
+    )
+    graph = AgentGraphSpec.model_validate(
+        {
+            "graph_id": "tool-graph",
+            "name": "Tool graph",
+            "nodes": [
+                {"id": "START", "type": "input"},
+                {"id": "Search", "type": "tool", "config": {"tool_name": "web_search_mock"}},
+                {"id": "END", "type": "output"},
+            ],
+            "edges": [
+                {"source": "START", "target": "Search"},
+                {"source": "Search", "target": "END"},
+            ],
+        }
+    )
+
+    run = runner.run(graph, input_text="Mia sandbox search")
+
+    assert run.status == "completed"
+    assert "[mock-search]" in run.outputs["Search"]
+    assert GraphEventType.TOOL_INVOKED in [event.event_type for event in run.events]

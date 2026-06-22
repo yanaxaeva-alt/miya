@@ -13,6 +13,7 @@ class NodeType(StrEnum):
     CRITIC = "critic"
     APPROVAL = "approval"
     OUTPUT = "output"
+    TOOL = "tool"
 
 
 class NodeSpec(BaseModel):

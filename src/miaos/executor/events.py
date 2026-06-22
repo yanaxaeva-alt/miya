@@ -15,6 +15,7 @@ class GraphEventType(StrEnum):
     APPROVAL_REQUIRED = "approval_required"
     RUN_COMPLETED = "run_completed"
     RUN_STOPPED = "run_stopped"
+    TOOL_INVOKED = "tool_invoked"
 
 
 class GraphEvent(BaseModel):
