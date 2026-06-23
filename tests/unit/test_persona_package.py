@@ -9,6 +9,7 @@ from miaos.persona import (
     export_persona_archive,
     import_persona_archive,
     load_persona_package,
+    update_persona_model_binding,
     validate_persona_package,
 )
 
@@ -69,6 +70,24 @@ def test_load_persona_package_preserves_profile_values(tmp_path: Path) -> None:
     assert package.card.values == ["honesty", "curiosity"]
     assert package.model_binding.model_id == "mock-test"
     assert package.autonomy_contract_ref.autonomy_ceiling == "L3"
+
+
+def test_update_persona_model_binding_persists_to_package(tmp_path: Path) -> None:
+    """Updating a package model binding rewrites model_binding.json."""
+    profile = tmp_path / "persona.yaml"
+    output = tmp_path / "mia-minimal"
+    _write_profile(profile)
+    create_persona_package(name="Mia", profile_path=profile, output_path=output)
+
+    updated = update_persona_model_binding(
+        output,
+        provider="omlx",
+        model_id="Qwen3.5-9B-8bit",
+    )
+    reloaded = load_persona_package(output)
+
+    assert updated.model_binding.provider == "omlx"
+    assert reloaded.model_binding.model_id == "Qwen3.5-9B-8bit"
 
 
 def test_personality_guard_builds_inference_context(tmp_path: Path) -> None:

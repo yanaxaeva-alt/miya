@@ -219,7 +219,7 @@ export function ModelStudio({ models, onModelsChange }: ModelStudioProps) {
     try {
       const providerList = await setOmlxDefaultModel(selectedOmlxModel);
       setProviders(providerList);
-      setMessage(`oMLX model selected: ${selectedOmlxModel}`);
+      setMessage(`oMLX model saved: ${selectedOmlxModel}`);
       window.dispatchEvent(new CustomEvent('miya:studio-refresh'));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось выбрать oMLX модель');

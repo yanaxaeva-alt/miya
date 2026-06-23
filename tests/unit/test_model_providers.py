@@ -66,6 +66,7 @@ def test_omlx_provider_generates_with_openai_compatible_response(
 ) -> None:
     """OMLX provider speaks the OpenAI-compatible chat/completions protocol."""
     provider = OMLXModelProvider(base_url="http://127.0.0.1:8010")
+    monkeypatch.delenv(MIYA_OMLX_MODEL_ENV, raising=False)
     calls: list[tuple[str, str, dict[str, Any] | None]] = []
 
     def fake_request_json(

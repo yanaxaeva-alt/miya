@@ -8,6 +8,7 @@ from miaos.persona.package import (
     export_persona_archive,
     import_persona_archive,
     load_persona_package,
+    update_persona_model_binding,
     validate_persona_package,
 )
 from miaos.persona.schemas import (
@@ -31,5 +32,6 @@ __all__ = [
     "export_persona_archive",
     "import_persona_archive",
     "load_persona_package",
+    "update_persona_model_binding",
     "validate_persona_package",
 ]

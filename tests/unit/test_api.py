@@ -1,10 +1,13 @@
 """Tests for the local FastAPI backend."""
 
+import os
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from miaos.api import MiaOSApiState, create_app
+from miaos.models.providers import MIYA_OMLX_MODEL_ENV, MIYA_PROVIDER_ENV, OMLXModelProvider
 
 HTTP_OK = 200
 VITE_DEV_ORIGIN = "http://127.0.0.1:5173"
@@ -55,6 +58,79 @@ def test_api_providers_lists_available_provider_options(tmp_path: Path) -> None:
     names = {item["name"] for item in response.json()}
     assert names == {"mock", "omlx", "mlx"}
     assert all("default" in item for item in response.json())
+
+
+def test_api_omlx_default_model_persists(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Selecting an oMLX model writes persistent runtime settings."""
+    monkeypatch.delenv(MIYA_PROVIDER_ENV, raising=False)
+    monkeypatch.delenv(MIYA_OMLX_MODEL_ENV, raising=False)
+    monkeypatch.setattr(OMLXModelProvider, "is_available", lambda _self: True)
+
+    def fake_list_model_ids(_self: OMLXModelProvider, *, timeout: float = 5) -> list[str]:
+        assert timeout > 0
+        return ["Qwen3.5-9B-8bit", "Qwen2.5-7B"]
+
+    monkeypatch.setattr(OMLXModelProvider, "list_model_ids", fake_list_model_ids)
+
+    response = _client(tmp_path).post(
+        "/providers/omlx/default-model",
+        json={"model_id": "Qwen3.5-9B-8bit"},
+    )
+
+    assert response.status_code == HTTP_OK
+    omlx = next(item for item in response.json() if item["name"] == "omlx")
+    assert omlx["default"] is True
+    assert omlx["default_model"] == "Qwen3.5-9B-8bit"
+    assert (tmp_path / "settings.json").exists()
+
+    monkeypatch.delenv(MIYA_PROVIDER_ENV, raising=False)
+    monkeypatch.delenv(MIYA_OMLX_MODEL_ENV, raising=False)
+    MiaOSApiState(tmp_path)
+
+    assert os.environ[MIYA_PROVIDER_ENV] == "omlx"
+    assert os.environ[MIYA_OMLX_MODEL_ENV] == "Qwen3.5-9B-8bit"
+
+    monkeypatch.delenv(MIYA_PROVIDER_ENV, raising=False)
+    monkeypatch.delenv(MIYA_OMLX_MODEL_ENV, raising=False)
+
+
+def test_api_omlx_default_model_syncs_mia_persona(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Selecting the main oMLX model updates Mia's persona binding."""
+    monkeypatch.delenv(MIYA_PROVIDER_ENV, raising=False)
+    monkeypatch.delenv(MIYA_OMLX_MODEL_ENV, raising=False)
+    monkeypatch.setattr(OMLXModelProvider, "is_available", lambda _self: True)
+
+    def fake_list_model_ids(_self: OMLXModelProvider, *, timeout: float = 5) -> list[str]:
+        assert timeout > 0
+        return ["Qwen3.5-9B-8bit"]
+
+    monkeypatch.setattr(OMLXModelProvider, "list_model_ids", fake_list_model_ids)
+    client = _client(tmp_path)
+    _create_demo_persona(client)
+
+    response = client.post(
+        "/providers/omlx/default-model",
+        json={"model_id": "Qwen3.5-9B-8bit"},
+    )
+    personas = client.get("/personas").json()
+    mia = next(item for item in personas if item["package_id"] == "mia")
+
+    assert response.status_code == HTTP_OK
+    assert mia["model_binding"] == {
+        "provider": "omlx",
+        "model_id": "Qwen3.5-9B-8bit",
+        "runtime_profile": None,
+        "role_pool": {},
+    }
+
+    monkeypatch.delenv(MIYA_PROVIDER_ENV, raising=False)
+    monkeypatch.delenv(MIYA_OMLX_MODEL_ENV, raising=False)
 
 
 def test_api_tools_lists_sandbox_tools(tmp_path: Path) -> None:
@@ -180,6 +256,23 @@ def test_api_chat_turn_with_persona_package(tmp_path: Path) -> None:
     episodes = client.get("/memory/episodes", params={"package_id": "mia"})
     assert episodes.status_code == HTTP_OK
     assert len(episodes.json()) == EXPECTED_CHAT_EPISODES
+
+
+def test_api_persona_model_binding_can_be_updated(tmp_path: Path) -> None:
+    """Persona model binding endpoint updates the package and list response."""
+    client = _client(tmp_path)
+    _create_demo_persona(client)
+
+    response = client.patch(
+        "/personas/mia/model-binding",
+        json={"provider": "omlx", "model_id": "Qwen3.5-9B-8bit"},
+    )
+    personas = client.get("/personas").json()
+    mia = next(item for item in personas if item["package_id"] == "mia")
+
+    assert response.status_code == HTTP_OK
+    assert response.json()["model_binding"]["provider"] == "omlx"
+    assert mia["model_binding"]["model_id"] == "Qwen3.5-9B-8bit"
 
 
 def test_api_memory_profile_and_notes(tmp_path: Path) -> None:

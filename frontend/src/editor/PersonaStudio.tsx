@@ -63,13 +63,16 @@ export function PersonaStudio() {
     setMessage(null);
     try {
       let provider = DEFAULT_PROVIDER;
+      let modelId = 'qwen3.5-8b';
       try {
         const providers = await fetchProviders();
         provider = pickDefaultProvider(providers);
+        const activeProvider = providers.find((item) => item.name === provider);
+        modelId = activeProvider?.default_model || activeProvider?.model_ids?.[0] || modelId;
       } catch {
         // keep DEFAULT_PROVIDER
       }
-      const manifest = await createPersona('Mia', buildMiaProfile(provider), 'mia');
+      const manifest = await createPersona('Mia', buildMiaProfile(provider, modelId), 'mia');
       setMessage(`Создан пакет «${manifest.name}» (${manifest.persona_id})`);
       await refresh();
       window.dispatchEvent(new CustomEvent('miya:studio-refresh'));
@@ -195,6 +198,8 @@ export function PersonaStudio() {
                 <th>Имя</th>
                 <th>persona_id</th>
                 <th>package_id</th>
+                <th>Provider</th>
+                <th>Model</th>
                 <th>Версия</th>
                 <th>Создан</th>
                 <th />
@@ -217,6 +222,10 @@ export function PersonaStudio() {
                     </td>
                     <td>
                       <code>{id}</code>
+                    </td>
+                    <td>{persona.model_binding?.provider ?? '—'}</td>
+                    <td>
+                      <code>{persona.model_binding?.model_id ?? '—'}</code>
                     </td>
                     <td>{persona.version}</td>
                     <td>{formatTs(persona.created_at)}</td>

@@ -31,26 +31,38 @@ export function ChatStudio({ onTraceId }: ChatStudioProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    void (async () => {
-      try {
-        const [personaList, providerList] = await Promise.all([fetchPersonas(), fetchProviders()]);
-        setPersonas(personaList);
-        setProviders(providerList);
-        if (personaList.length > 0) {
-          setSelectedPackageId(personaList[0].package_id || 'mia');
-        }
-        setSelectedProvider((prev) => {
-          const current = providerList.find((item) => item.name === prev);
-          if (current?.available) return prev;
-          return pickDefaultProvider(providerList);
-        });
-      } catch {
-        setPersonas([]);
-        setProviders([]);
+  const loadStudioData = useCallback(async () => {
+    try {
+      const [personaList, providerList] = await Promise.all([fetchPersonas(), fetchProviders()]);
+      setPersonas(personaList);
+      setProviders(providerList);
+      if (personaList.length > 0) {
+        setSelectedPackageId((prev) =>
+          personaList.some((persona) => (persona.package_id || 'mia') === prev)
+            ? prev
+            : personaList[0].package_id || 'mia',
+        );
       }
-    })();
+      setSelectedProvider((prev) => {
+        const current = providerList.find((item) => item.name === prev);
+        if (current?.available) return prev;
+        return pickDefaultProvider(providerList);
+      });
+    } catch {
+      setPersonas([]);
+      setProviders([]);
+    }
   }, []);
+
+  useEffect(() => {
+    void loadStudioData();
+  }, [loadStudioData]);
+
+  useEffect(() => {
+    const onRefresh = () => void loadStudioData();
+    window.addEventListener('miya:studio-refresh', onRefresh);
+    return () => window.removeEventListener('miya:studio-refresh', onRefresh);
+  }, [loadStudioData]);
 
   const sendMessage = useCallback(async () => {
     const text = inputText.trim();
@@ -82,6 +94,10 @@ export function ChatStudio({ onTraceId }: ChatStudioProps) {
     }
   }, [inputText, onTraceId, selectedPackageId, selectedProvider]);
 
+  const selectedPersona = personas.find(
+    (persona) => (persona.package_id || 'mia') === selectedPackageId,
+  );
+
   return (
     <section id="miya-chat-studio" className="miya-chat-studio">
       <div className="miya-run-header">
@@ -93,6 +109,12 @@ export function ChatStudio({ onTraceId }: ChatStudioProps) {
         Один ход через <code>POST /chat</code>: persona → PersonalityGuard → провайдер → Policy Gate → audit
         log.
       </p>
+      {selectedPersona?.model_binding && (
+        <p className="miya-run-hint">
+          Persona binding: <code>{selectedPersona.model_binding.provider}</code> /{' '}
+          <code>{selectedPersona.model_binding.model_id}</code>
+        </p>
+      )}
 
       <div className="miya-chat-controls">
         <label className="miya-field">

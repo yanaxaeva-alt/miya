@@ -5,6 +5,7 @@ import json
 import shutil
 import tempfile
 import zipfile
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -97,6 +98,21 @@ def load_persona_package(path: Path) -> PersonaPackage:
 def validate_persona_package(path: Path) -> PersonaManifest:
     """Validate a minimal `.mia` package and return its manifest."""
     return load_persona_package(path).manifest
+
+
+def update_persona_model_binding(
+    path: Path,
+    *,
+    provider: str,
+    model_id: str,
+) -> PersonaPackage:
+    """Update one package model binding and return the reloaded package."""
+    package = load_persona_package(path)
+    binding = package.model_binding.model_copy(update={"provider": provider, "model_id": model_id})
+    manifest = package.manifest.model_copy(update={"updated_at": datetime.now(UTC)})
+    _write_json(path / package.manifest.model_binding_path, binding)
+    _write_json(path / "manifest.json", manifest)
+    return load_persona_package(path)
 
 
 def export_persona_archive(path: Path) -> bytes:

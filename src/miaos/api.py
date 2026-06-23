@@ -1,7 +1,6 @@
 """Local FastAPI backend for the future desktop editor."""
 
 import json
-import os
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -26,7 +25,6 @@ from miaos.models import (
     evaluate_models_for_profile,
 )
 from miaos.models.providers import (
-    MIYA_OMLX_MODEL_ENV,
     OMLXModelProvider,
     default_provider_name,
     provider_infos,
@@ -40,12 +38,13 @@ from miaos.persona import (
     export_persona_archive,
     import_persona_archive,
     load_persona_package,
-    validate_persona_package,
+    update_persona_model_binding,
 )
 from miaos.quality import list_datasets, load_dataset, run_quality_eval
 from miaos.runtime import RuntimeProfileError, list_runtime_profiles, load_runtime_profile
 from miaos.runtime.chat import ChatSession
 from miaos.safety.approval_queue import ApprovalQueue, ApprovalStatus
+from miaos.settings import RuntimeSettingsStore, apply_runtime_settings, runtime_settings_path
 from miaos.templates import (
     TemplateNotFoundError,
     get_template,
@@ -67,6 +66,8 @@ class MiaOSApiState:
         """Create API state rooted under a local data directory."""
         self.base_dir = base_dir
         self.base_dir.mkdir(parents=True, exist_ok=True)
+        self.settings_store = RuntimeSettingsStore(runtime_settings_path(base_dir))
+        apply_runtime_settings(self.settings_store.load())
         self.model_manager = ModelManager.from_path(base_dir / "models.sqlite3")
         self.decision_log = DecisionLog(base_dir / "decisions.jsonl")
         self.approval_queue = ApprovalQueue(self.decision_log)
@@ -99,6 +100,10 @@ class MiaOSApiState:
             )
         return self._aeon_runtimes[cache_key]
 
+    def clear_aeon_runtime_cache(self) -> None:
+        """Drop cached AEON runtimes after persona/provider settings change."""
+        self._aeon_runtimes.clear()
+
 
 class ModelRegisterPayload(BaseModel):
     """Request body for model metadata registration."""
@@ -122,6 +127,13 @@ class ModelLabCertPayload(BaseModel):
 class ProviderDefaultModelPayload(BaseModel):
     """Request body for selecting a provider default model."""
 
+    model_id: str = Field(min_length=1)
+
+
+class PersonaModelBindingPayload(BaseModel):
+    """Request body for updating persona model binding."""
+
+    provider: str = Field(min_length=1)
     model_id: str = Field(min_length=1)
 
 
@@ -238,6 +250,15 @@ class AeonGoalPayload(BaseModel):
     provider: str = Field(default_factory=default_provider_name)
 
 
+def _persona_package_response(package_path: Path) -> dict[str, Any]:
+    """Return persona manifest metadata plus runtime-visible model binding."""
+    package = load_persona_package(package_path)
+    body = package.manifest.model_dump(mode="json")
+    body["package_id"] = package.root.name
+    body["model_binding"] = package.model_binding.model_dump(mode="json")
+    return body
+
+
 def create_app(state: MiaOSApiState | None = None) -> FastAPI:  # noqa: PLR0915
     """Create the local API application."""
     api_state = state or MiaOSApiState(resolve_data_dir())
@@ -340,12 +361,10 @@ def create_app(state: MiaOSApiState | None = None) -> FastAPI:  # noqa: PLR0915
     @app.get("/personas")
     def personas() -> list[dict[str, Any]]:
         """List persona package manifests."""
-        items: list[dict[str, Any]] = []
-        for manifest_path in sorted(api_state.persona_dir.glob("*/manifest.json")):
-            manifest = validate_persona_package(manifest_path.parent).model_dump(mode="json")
-            manifest["package_id"] = manifest_path.parent.name
-            items.append(manifest)
-        return items
+        return [
+            _persona_package_response(manifest_path.parent)
+            for manifest_path in sorted(api_state.persona_dir.glob("*/manifest.json"))
+        ]
 
     @app.post("/personas")
     def create_persona(payload: PersonaCreatePayload) -> dict[str, Any]:
@@ -360,7 +379,27 @@ def create_app(state: MiaOSApiState | None = None) -> FastAPI:  # noqa: PLR0915
             )
         except PersonaPackageError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-        return package.manifest.model_dump(mode="json")
+        return _persona_package_response(package.root)
+
+    @app.patch("/personas/{package_id}/model-binding")
+    def set_persona_model_binding(
+        package_id: str,
+        payload: PersonaModelBindingPayload,
+    ) -> dict[str, Any]:
+        """Update one persona package model binding."""
+        package_path = api_state.persona_dir / package_id
+        if not package_path.is_dir():
+            raise HTTPException(status_code=404, detail="persona package not found")
+        try:
+            package = update_persona_model_binding(
+                package_path,
+                provider=payload.provider,
+                model_id=payload.model_id,
+            )
+        except PersonaPackageError as exc:
+            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        api_state.clear_aeon_runtime_cache()
+        return _persona_package_response(package.root)
 
     @app.get("/personas/{package_id}/export")
     def export_persona(package_id: str) -> Response:
@@ -398,9 +437,7 @@ def create_app(state: MiaOSApiState | None = None) -> FastAPI:  # noqa: PLR0915
             )
         except PersonaPackageError as exc:
             raise HTTPException(status_code=400, detail=str(exc)) from exc
-        manifest = package.manifest.model_dump(mode="json")
-        manifest["package_id"] = package.root.name
-        return manifest
+        return _persona_package_response(package.root)
 
     @app.get("/providers")
     def providers() -> list[dict[str, Any]]:
@@ -416,7 +453,20 @@ def create_app(state: MiaOSApiState | None = None) -> FastAPI:  # noqa: PLR0915
         model_ids = provider.list_model_ids()
         if payload.model_id not in model_ids:
             raise HTTPException(status_code=404, detail=f"unknown oMLX model: {payload.model_id}")
-        os.environ[MIYA_OMLX_MODEL_ENV] = payload.model_id
+        settings = api_state.settings_store.select_model(
+            provider="omlx",
+            model_id=payload.model_id,
+            base_url=provider.base_url,
+        )
+        apply_runtime_settings(settings, override=True)
+        mia_path = api_state.persona_dir / "mia"
+        if mia_path.is_dir():
+            update_persona_model_binding(
+                mia_path,
+                provider="omlx",
+                model_id=payload.model_id,
+            )
+            api_state.clear_aeon_runtime_cache()
         return [info.model_dump(mode="json") for info in provider_infos()]
 
     @app.get("/tools")

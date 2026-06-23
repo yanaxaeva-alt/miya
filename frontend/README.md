@@ -61,6 +61,8 @@ cd ~/Documents/miya/frontend
 MIYA_PROVIDER=omlx MIYA_OMLX_BASE_URL="http://127.0.0.1:8010" MIYA_OMLX_MODEL="your-model-id" ./scripts/start-miaos-backend.sh
 ```
 
+You can also select the oMLX model in **Models & Persona → Model Studio**. The selection is saved to `.miaos/settings.json` and reused when the backend restarts.
+
 Ports:
 
 - `8010` — oMLX model server

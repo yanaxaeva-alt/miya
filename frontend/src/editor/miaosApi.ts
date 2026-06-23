@@ -130,6 +130,14 @@ export interface MiaosPersonaManifest {
   model_binding_path: string;
   autonomy_contract_ref_path: string;
   package_id?: string;
+  model_binding?: MiaosModelBinding;
+}
+
+export interface MiaosModelBinding {
+  provider: string;
+  model_id: string;
+  runtime_profile?: string | null;
+  role_pool?: Record<string, string>;
 }
 
 export interface MiaosChatTurn {

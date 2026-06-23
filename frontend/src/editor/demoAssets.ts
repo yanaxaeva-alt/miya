@@ -46,7 +46,10 @@ export const DEMO_MODELS: MiaosModelRegisterPayload[] = [
 
 export const MIA_GRAPH_FILENAME = 'mia-minimal.json';
 
-export function buildMiaProfile(provider = DEFAULT_MIAOS_PROVIDER): MiaosPersonaProfile {
+export function buildMiaProfile(
+  provider = DEFAULT_MIAOS_PROVIDER,
+  modelId = 'qwen3.5-8b',
+): MiaosPersonaProfile {
   return {
     identity: {
       role: 'Когнитивный исполнитель',
@@ -58,7 +61,7 @@ export function buildMiaProfile(provider = DEFAULT_MIAOS_PROVIDER): MiaosPersona
     },
     model_binding: {
       provider,
-      model_id: 'qwen3.5-8b',
+      model_id: modelId,
       runtime_profile: 'macbook_air_m4_32gb',
     },
     autonomy_contract: {
