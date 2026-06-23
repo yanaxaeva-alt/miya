@@ -1,172 +1,182 @@
 :root {
   color-scheme: light dark;
-  --text: #374151;
-  --text-h: #111827;
-  --text-muted: #6b7280;
-  --text-subtle: #64748b;
-  --bg: #ffffff;
-  --bg-elevated: #ffffff;
-  --bg-subtle: #f8fafc;
-  --bg-muted: #f3f4f6;
-  --bg-canvas: #f5f5f5;
-  --bg-input: #ffffff;
-  --border: #e5e7eb;
-  --border-strong: #d1d5db;
-  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.12);
-  --focus-ring: #93c5fd;
-  --focus-border: #2563eb;
-  --toolbar-bg: #fffbeb;
-  --toolbar-border: #fcd34d;
-  --toolbar-text: #92400e;
-  --btn-bg: #ffffff;
-  --btn-text: #111827;
-  --btn-border: #9ca3af;
-  --btn-secondary-bg: #eff6ff;
-  --btn-secondary-border: #2563eb;
-  --btn-secondary-text: #1d4ed8;
-  --btn-primary-bg: #2563eb;
-  --btn-primary-border: #1d4ed8;
+  --text: #4f4b56;
+  --text-h: #27202c;
+  --text-muted: #747485;
+  --text-subtle: #8b90a2;
+  --bg: #f6f7f5;
+  --bg-elevated: #fffefd;
+  --bg-subtle: #eef1f3;
+  --bg-muted: #e3e8ec;
+  --bg-canvas: #eef2f4;
+  --bg-input: #fbfcfa;
+  --border: #dbe2e6;
+  --border-strong: #c2ccd3;
+  --shadow-sm: 0 2px 8px rgba(62, 65, 73, 0.08);
+  --shadow-md: 0 8px 24px rgba(62, 65, 73, 0.12);
+  --accent: #5b3f63;
+  --accent-soft: #f0ecf2;
+  --accent-border: #c9bacf;
+  --accent-text: #52375b;
+  --focus-ring: #e5dce9;
+  --focus-border: #6b4a74;
+  --toolbar-bg: #eef2f4;
+  --toolbar-border: #d7e0e5;
+  --toolbar-text: #586575;
+  --btn-bg: #fffefd;
+  --btn-text: #27202c;
+  --btn-border: #bfc9c2;
+  --btn-secondary-bg: #eef3f7;
+  --btn-secondary-border: #a9b8c8;
+  --btn-secondary-text: #586879;
+  --btn-primary-bg: #5b3f63;
+  --btn-primary-border: #4c3354;
   --btn-primary-text: #ffffff;
-  --btn-danger-bg: #fee2e2;
-  --btn-danger-border: #ef4444;
-  --btn-danger-text: #b91c1c;
-  --btn-run-bg: #059669;
-  --btn-run-border: #047857;
+  --btn-danger-bg: #f7e8ec;
+  --btn-danger-border: #d98b9a;
+  --btn-danger-text: #8f3045;
+  --btn-run-bg: #5b3f63;
+  --btn-run-border: #4c3354;
   --btn-run-text: #ffffff;
-  --badge-bg: #e5e7eb;
-  --badge-text: #374151;
-  --badge-ok-bg: #dcfce7;
-  --badge-ok-text: #166534;
-  --badge-off-bg: #fee2e2;
-  --badge-off-text: #991b1b;
-  --info-bg: #eff6ff;
-  --info-border: #bfdbfe;
-  --info-text: #1e3a8a;
-  --success-bg: #ecfdf5;
-  --success-border: #6ee7b7;
-  --success-text: #065f46;
-  --success-accent: #047857;
-  --error-bg: #fee2e2;
-  --error-border: #fca5a5;
-  --error-text: #991b1b;
-  --warning-bg: #fff7ed;
-  --warning-border: #fdba74;
-  --warning-text: #9a3412;
-  --warning-accent: #c2410c;
-  --code-bg: #f3f4f6;
-  --pre-bg: #f9fafb;
-  --table-head-bg: #f8fafc;
-  --trace-actor: #1d4ed8;
-  --edge-stroke: #9ca3af;
-  --port-in: #5f95ff;
-  --port-out: #10b981;
-  --port-fill: #ffffff;
-  --minimap-bg: #ffffff;
-  --minimap-viewport: #0d9488;
-  --transform: #2563eb;
-  --node-bg: #ffffff;
-  --node-shadow: 0 2px 4px rgba(0, 0, 0, 0.08);
-  --node-active-shadow: 0 0 0 3px rgba(16, 185, 129, 0.45), 0 4px 12px rgba(16, 185, 129, 0.25);
-  --agent-idle: #9ca3af;
-  --agent-running: #10b981;
-  --agent-error: #ef4444;
-  --approval-bg: #fff7ed;
-  --approval-border: #f97316;
-  --approval-active-shadow: 0 0 0 3px rgba(249, 115, 22, 0.45), 0 4px 12px rgba(249, 115, 22, 0.25);
-  --grid-color: #dcdcdc;
-  --stencil-bg: #f5f5f5;
-  --stencil-title-bg: #fafafa;
-  --stencil-title-text: #333333;
-  --stencil-group-bg: #f5f5f5;
-  --stencil-search-bg: #ffffff;
-  --stencil-search-border: #e5e7eb;
-  --stencil-search-text: #111827;
+  --badge-bg: #e4e8ec;
+  --badge-text: #4f4b56;
+  --badge-ok-bg: #eef3f7;
+  --badge-ok-text: #586879;
+  --badge-off-bg: #f7e8ec;
+  --badge-off-text: #8f3045;
+  --info-bg: #eef2f6;
+  --info-border: #c9d3df;
+  --info-text: #596179;
+  --success-bg: #eef3f7;
+  --success-border: #b9c7d4;
+  --success-text: #586879;
+  --success-accent: #8798aa;
+  --error-bg: #f7e8ec;
+  --error-border: #d98b9a;
+  --error-text: #8f3045;
+  --warning-bg: #f7f0df;
+  --warning-border: #dec47f;
+  --warning-text: #735a16;
+  --warning-accent: #a7821f;
+  --code-bg: #eef1ef;
+  --pre-bg: #fbfcfa;
+  --table-head-bg: #eef1ef;
+  --trace-actor: #5b3f63;
+  --edge-stroke: #a5adb3;
+  --port-in: #8790a8;
+  --port-out: #8798aa;
+  --port-fill: #fffefd;
+  --minimap-bg: #fffefd;
+  --minimap-viewport: #8798aa;
+  --transform: #5b3f63;
+  --node-bg: #fffefd;
+  --node-shadow: 0 2px 8px rgba(62, 65, 73, 0.08);
+  --node-active-shadow: 0 0 0 3px rgba(135, 152, 170, 0.36), 0 6px 18px rgba(91, 63, 99, 0.14);
+  --agent-idle: #a5adb3;
+  --agent-running: #8798aa;
+  --agent-error: #d98b9a;
+  --approval-bg: #f7f0df;
+  --approval-border: #dec47f;
+  --approval-active-shadow: 0 0 0 3px rgba(222, 196, 127, 0.45), 0 6px 18px rgba(167, 130, 31, 0.16);
+  --grid-color: #d8dfe4;
+  --stencil-bg: #eef2f4;
+  --stencil-title-bg: #f8f9f7;
+  --stencil-title-text: #4f4b56;
+  --stencil-group-bg: #eef2f4;
+  --stencil-search-bg: #fbfcfa;
+  --stencil-search-border: #dbe2e6;
+  --stencil-search-text: #27202c;
   --sans: system-ui, -apple-system, sans-serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --text: #cbd5e1;
-    --text-h: #f1f5f9;
-    --text-muted: #94a3b8;
-    --text-subtle: #64748b;
-    --bg: #0f172a;
-    --bg-elevated: #1e293b;
-    --bg-subtle: #162032;
-    --bg-muted: #1e293b;
-    --bg-canvas: #111827;
-    --bg-input: #0f172a;
-    --border: #334155;
-    --border-strong: #475569;
-    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.35);
-    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45);
-    --focus-ring: #1d4ed8;
-    --focus-border: #60a5fa;
-    --toolbar-bg: #422006;
-    --toolbar-border: #b45309;
-    --toolbar-text: #fde68a;
-    --btn-bg: #1e293b;
-    --btn-text: #f1f5f9;
-    --btn-border: #475569;
-    --btn-secondary-bg: #172554;
-    --btn-secondary-border: #3b82f6;
-    --btn-secondary-text: #93c5fd;
-    --btn-primary-bg: #2563eb;
-    --btn-primary-border: #1d4ed8;
+    --text: #ddd9df;
+    --text-h: #fbf6fb;
+    --text-muted: #b8b8c2;
+    --text-subtle: #969dab;
+    --bg: #171918;
+    --bg-elevated: #212520;
+    --bg-subtle: #282d31;
+    --bg-muted: #323940;
+    --bg-canvas: #1c2024;
+    --bg-input: #171918;
+    --border: #3f4a52;
+    --border-strong: #566471;
+    --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.35);
+    --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.45);
+    --accent: #b59ac0;
+    --accent-soft: #332938;
+    --accent-border: #80658a;
+    --accent-text: #eddff2;
+    --focus-ring: #5b4962;
+    --focus-border: #b59ac0;
+    --toolbar-bg: #272d33;
+    --toolbar-border: #46525c;
+    --toolbar-text: #ddd9df;
+    --btn-bg: #212520;
+    --btn-text: #fbf6fb;
+    --btn-border: #566471;
+    --btn-secondary-bg: #2b333a;
+    --btn-secondary-border: #6b7b8d;
+    --btn-secondary-text: #dbe3ec;
+    --btn-primary-bg: #6e4e78;
+    --btn-primary-border: #b59ac0;
     --btn-primary-text: #ffffff;
-    --btn-danger-bg: #450a0a;
-    --btn-danger-border: #ef4444;
-    --btn-danger-text: #fecaca;
-    --btn-run-bg: #047857;
-    --btn-run-border: #059669;
-    --btn-run-text: #ecfdf5;
-    --badge-bg: #334155;
-    --badge-text: #e2e8f0;
-    --badge-ok-bg: #14532d;
-    --badge-ok-text: #bbf7d0;
-    --badge-off-bg: #450a0a;
-    --badge-off-text: #fecaca;
-    --info-bg: #172554;
-    --info-border: #1e40af;
-    --info-text: #bfdbfe;
-    --success-bg: #064e3b;
-    --success-border: #047857;
-    --success-text: #a7f3d0;
-    --success-accent: #34d399;
-    --error-bg: #450a0a;
-    --error-border: #991b1b;
-    --error-text: #fecaca;
-    --warning-bg: #431407;
-    --warning-border: #c2410c;
-    --warning-text: #fed7aa;
-    --warning-accent: #fb923c;
-    --code-bg: #1e293b;
-    --pre-bg: #111827;
-    --table-head-bg: #162032;
-    --trace-actor: #93c5fd;
-    --edge-stroke: #64748b;
-    --port-fill: #1e293b;
-    --minimap-bg: #1e293b;
-    --minimap-viewport: #2dd4bf;
-    --transform: #60a5fa;
-    --node-bg: #1e293b;
+    --btn-danger-bg: #3b202a;
+    --btn-danger-border: #a85d70;
+    --btn-danger-text: #ffd5de;
+    --btn-run-bg: #6e4e78;
+    --btn-run-border: #b59ac0;
+    --btn-run-text: #ffffff;
+    --badge-bg: #323940;
+    --badge-text: #ddd9df;
+    --badge-ok-bg: #2b333a;
+    --badge-ok-text: #dbe3ec;
+    --badge-off-bg: #3b202a;
+    --badge-off-text: #ffd5de;
+    --info-bg: #2a3039;
+    --info-border: #586273;
+    --info-text: #d6dce8;
+    --success-bg: #2b333a;
+    --success-border: #6b7b8d;
+    --success-text: #dbe3ec;
+    --success-accent: #9aa8b7;
+    --error-bg: #3b202a;
+    --error-border: #a85d70;
+    --error-text: #ffd5de;
+    --warning-bg: #3a321f;
+    --warning-border: #8c7435;
+    --warning-text: #f4dfaa;
+    --warning-accent: #dec47f;
+    --code-bg: #282d31;
+    --pre-bg: #171918;
+    --table-head-bg: #282d31;
+    --trace-actor: #d8c0df;
+    --edge-stroke: #7d858c;
+    --port-in: #aeb7c8;
+    --port-out: #aeb9c6;
+    --port-fill: #212520;
+    --minimap-bg: #212520;
+    --minimap-viewport: #aeb9c6;
+    --transform: #b59ac0;
+    --node-bg: #212520;
     --node-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
-    --node-active-shadow: 0 0 0 3px rgba(52, 211, 153, 0.35), 0 4px 16px rgba(16, 185, 129, 0.2);
-    --agent-idle: #64748b;
-    --agent-running: #34d399;
-    --agent-error: #f87171;
-    --approval-bg: #431407;
-    --approval-border: #ea580c;
-    --approval-active-shadow: 0 0 0 3px rgba(251, 146, 60, 0.35), 0 4px 16px rgba(234, 88, 12, 0.2);
-    --grid-color: #334155;
-    --stencil-bg: #111827;
-    --stencil-title-bg: #1e293b;
-    --stencil-title-text: #e2e8f0;
-    --stencil-group-bg: #111827;
-    --stencil-search-bg: #0f172a;
-    --stencil-search-border: #334155;
-    --stencil-search-text: #f1f5f9;
+    --node-active-shadow: 0 0 0 3px rgba(154, 168, 183, 0.28), 0 6px 18px rgba(110, 78, 120, 0.2);
+    --agent-idle: #7d858c;
+    --agent-running: #aeb9c6;
+    --agent-error: #d98b9a;
+    --approval-bg: #3a321f;
+    --approval-border: #8c7435;
+    --approval-active-shadow: 0 0 0 3px rgba(222, 196, 127, 0.3), 0 6px 18px rgba(140, 116, 53, 0.18);
+    --grid-color: #3f4a52;
+    --stencil-bg: #1c2024;
+    --stencil-title-bg: #282d31;
+    --stencil-title-text: #ddd9df;
+    --stencil-group-bg: #1c2024;
+    --stencil-search-bg: #171918;
+    --stencil-search-border: #3f4a52;
+    --stencil-search-text: #fbf6fb;
   }
 }
 
@@ -851,7 +861,7 @@ body {
 }
 
 .miya-welcome {
-  border-color: var(--accent-border, #c4b5fd);
+  border-color: var(--accent-border);
   background: var(--bg-subtle);
 }
 
@@ -1056,9 +1066,9 @@ body {
 }
 
 .miya-compat-warning {
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fcd34d;
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
 }
 
 .miya-compat-error,
@@ -1080,7 +1090,7 @@ body {
 }
 
 .miya-compat-item-warning {
-  color: #92400e;
+  color: var(--warning-text);
 }
 
 .miya-model-row-bad {
@@ -1204,8 +1214,8 @@ body {
 }
 
 .miya-chat-msg-system {
-  background: color-mix(in srgb, var(--accent, #7c3aed) 8%, var(--bg-subtle));
-  border-color: var(--accent-border, #c4b5fd);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-subtle));
+  border-color: var(--accent-border);
 }
 
 .miya-chat-msg-blocked {
@@ -1377,7 +1387,7 @@ body {
 
 .miya-aeon-progress {
   height: 6px;
-  background: var(--surface-muted, #e5e7eb);
+  background: var(--bg-muted);
   border-radius: 999px;
   overflow: hidden;
 }
@@ -1385,7 +1395,7 @@ body {
 .miya-aeon-progress > span {
   display: block;
   height: 100%;
-  background: var(--accent, #6366f1);
+  background: var(--accent);
 }
 
 .miya-aeon-goal-deactivate {
@@ -1405,7 +1415,7 @@ body {
 }
 
 .miya-scenario {
-  border-color: var(--accent-border, #c4b5fd);
+  border-color: var(--accent-border);
   background: var(--bg-subtle);
 }
 
@@ -1882,11 +1892,11 @@ body {
 }
 
 .miya-trace-run {
-  background: color-mix(in srgb, var(--accent, #6366f1) 6%, transparent);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
 }
 
 .miya-trace-audit {
-  background: color-mix(in srgb, var(--success-text, #166534) 4%, transparent);
+  background: color-mix(in srgb, var(--success-text) 4%, transparent);
 }
 
 .miya-policy-outcome {
@@ -1908,8 +1918,8 @@ body {
 }
 
 .miya-policy-approval {
-  background: var(--warning-bg, #fef3c7);
-  color: var(--warning-text, #92400e);
+  background: var(--warning-bg);
+  color: var(--warning-text);
 }
 
 .miya-policy-neutral {
