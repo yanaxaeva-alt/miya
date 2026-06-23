@@ -301,8 +301,6 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
             >
               <span className="miya-chat-msg-label">
                 {message.role === 'user' ? 'Вы' : message.role === 'system' ? 'AEON system' : 'AEON'}
-                {message.mode ? ` · ${message.mode}` : ''}
-                {message.graphId ? ` · ${message.graphId}` : ''}
               </span>
               <p className="miya-chat-msg-text">{readableAeonText(message.text)}</p>
             </li>
