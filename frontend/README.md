@@ -22,6 +22,15 @@ curl http://127.0.0.1:8000/health
 curl http://127.0.0.1:8000/api/status
 ```
 
+Full local doctor:
+
+```bash
+cd ~/Documents/miya
+uv run python scripts/miaos-doctor.py
+```
+
+The doctor checks backend health, provider selection, persona model binding, and AEON status.
+
 If the toolbar says `Backend MiaOS offline`, start the backend from this monorepo path:
 
 ```bash

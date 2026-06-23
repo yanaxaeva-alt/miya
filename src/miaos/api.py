@@ -44,7 +44,12 @@ from miaos.quality import list_datasets, load_dataset, run_quality_eval
 from miaos.runtime import RuntimeProfileError, list_runtime_profiles, load_runtime_profile
 from miaos.runtime.chat import ChatSession
 from miaos.safety.approval_queue import ApprovalQueue, ApprovalStatus
-from miaos.settings import RuntimeSettingsStore, apply_runtime_settings, runtime_settings_path
+from miaos.settings import (
+    RuntimeSettings,
+    RuntimeSettingsStore,
+    apply_runtime_settings,
+    runtime_settings_path,
+)
 from miaos.templates import (
     TemplateNotFoundError,
     get_template,
@@ -67,7 +72,8 @@ class MiaOSApiState:
         self.base_dir = base_dir
         self.base_dir.mkdir(parents=True, exist_ok=True)
         self.settings_store = RuntimeSettingsStore(runtime_settings_path(base_dir))
-        apply_runtime_settings(self.settings_store.load())
+        settings = self.settings_store.load()
+        apply_runtime_settings(settings)
         self.model_manager = ModelManager.from_path(base_dir / "models.sqlite3")
         self.decision_log = DecisionLog(base_dir / "decisions.jsonl")
         self.approval_queue = ApprovalQueue(self.decision_log)
@@ -79,6 +85,7 @@ class MiaOSApiState:
         self._aeon_runtimes: dict[str, AeonRuntime] = {}
         self.persona_dir.mkdir(parents=True, exist_ok=True)
         self.graph_dir.mkdir(parents=True, exist_ok=True)
+        self.sync_default_persona_binding(settings)
 
     def get_aeon_runtime(
         self,
@@ -103,6 +110,29 @@ class MiaOSApiState:
     def clear_aeon_runtime_cache(self) -> None:
         """Drop cached AEON runtimes after persona/provider settings change."""
         self._aeon_runtimes.clear()
+
+    def sync_default_persona_binding(self, settings: RuntimeSettings | None = None) -> None:
+        """Sync Mia's model binding with persisted provider settings when possible."""
+        current = settings or self.settings_store.load()
+        model_id = None
+        if current.provider == "omlx":
+            model_id = current.omlx_model
+        elif current.provider == "mlx":
+            model_id = current.mlx_model
+        if not current.provider or not model_id:
+            return
+        mia_path = self.persona_dir / "mia"
+        if not mia_path.is_dir():
+            return
+        try:
+            update_persona_model_binding(
+                mia_path,
+                provider=current.provider,
+                model_id=model_id,
+            )
+        except PersonaPackageError:
+            return
+        self.clear_aeon_runtime_cache()
 
 
 class ModelRegisterPayload(BaseModel):

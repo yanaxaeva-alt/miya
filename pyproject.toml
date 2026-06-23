@@ -64,6 +64,7 @@ ignore = [
 "src/miaos/safety/policy.py" = ["PLC0415"]
 "src/miaos/templates.py" = ["RUF001"]
 "src/aeon/**/*.py" = ["D100", "D101", "D102", "D103", "D107", "E501", "I001", "PLR2004", "RET504", "TRY004", "ARG002", "PLR0913"]
+"scripts/*.py" = ["INP001"]
 "tests/unit/test_aeon*.py" = ["D103", "E501"]
 "tests/**/*.py" = ["ANN401", "EM101", "PLR2004", "PT017", "S101", "TRY003"]
 

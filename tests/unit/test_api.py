@@ -8,6 +8,8 @@ from fastapi.testclient import TestClient
 
 from miaos.api import MiaOSApiState, create_app
 from miaos.models.providers import MIYA_OMLX_MODEL_ENV, MIYA_PROVIDER_ENV, OMLXModelProvider
+from miaos.persona import load_persona_package
+from miaos.settings import RuntimeSettingsStore, runtime_settings_path
 
 HTTP_OK = 200
 VITE_DEV_ORIGIN = "http://127.0.0.1:5173"
@@ -273,6 +275,31 @@ def test_api_persona_model_binding_can_be_updated(tmp_path: Path) -> None:
     assert response.status_code == HTTP_OK
     assert response.json()["model_binding"]["provider"] == "omlx"
     assert mia["model_binding"]["model_id"] == "Qwen3.5-9B-8bit"
+
+
+def test_api_state_startup_syncs_mia_persona_from_settings(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Persisted runtime settings update Mia's binding when the backend starts."""
+    monkeypatch.delenv(MIYA_PROVIDER_ENV, raising=False)
+    monkeypatch.delenv(MIYA_OMLX_MODEL_ENV, raising=False)
+    client = _client(tmp_path)
+    _create_demo_persona(client)
+    RuntimeSettingsStore(runtime_settings_path(tmp_path)).select_model(
+        provider="omlx",
+        model_id="Qwen3.5-9B-8bit",
+        base_url="http://127.0.0.1:8010",
+    )
+
+    MiaOSApiState(tmp_path)
+    package = load_persona_package(tmp_path / "personas" / "mia")
+
+    assert package.model_binding.provider == "omlx"
+    assert package.model_binding.model_id == "Qwen3.5-9B-8bit"
+
+    monkeypatch.delenv(MIYA_PROVIDER_ENV, raising=False)
+    monkeypatch.delenv(MIYA_OMLX_MODEL_ENV, raising=False)
 
 
 def test_api_memory_profile_and_notes(tmp_path: Path) -> None:
