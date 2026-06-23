@@ -48,13 +48,13 @@ class FixedExecutionLayer:
     def execute(self, request: AeonRequest, *, memory_context: str = "") -> tuple[str, ExecutionMode, str | None]:
         """Run the request through chat or a fixed MiaOS graph."""
         mode = self._choose_mode(request)
-        enriched = self._enrich_message(request.message, memory_context=memory_context)
         if mode == ExecutionMode.CHAT:
-            turn = self.chat.run_turn(enriched)
+            turn = self.chat.run_turn(request.message, extra_system_context=memory_context)
             if turn.blocked:
                 return turn.response_text, ExecutionMode.CHAT, None
             return turn.response_text, ExecutionMode.CHAT, None
 
+        enriched = self._enrich_message(request.message, memory_context=memory_context)
         template_id = (
             self.config.complex_graph_template
             if self._is_complex(enriched)

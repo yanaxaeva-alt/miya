@@ -23,10 +23,33 @@ from aeon.layers.l7_governance import MetaGovernance
 from aeon.layers.l8_constitution import ConstitutionalCore
 from aeon.persistence.goals_store import goals_path, load_goals, save_goals
 from aeon.persistence.tick_store import append_tick, load_recent_ticks, ticks_path
-from aeon.types import AeonRequest, AeonResponse, ExecutionMode, Goal, SurpriseLevel
+from aeon.types import (
+    ActiveInferenceTick,
+    AeonRequest,
+    AeonResponse,
+    ConstitutionalVerdict,
+    ExecutionMode,
+    Goal,
+    GovernanceReport,
+    SurpriseLevel,
+)
 
 if TYPE_CHECKING:
     from miaos.safety.approval_queue import ApprovalQueue
+
+REASONING_MARKERS = (
+    "Thinking Process:",
+    "Thinking process:",
+    "Reasoning:",
+    "Chain of thought:",
+    "Thought process:",
+)
+FINAL_ANSWER_MARKERS = (
+    "Final Answer:",
+    "Final answer:",
+    "Answer:",
+    "Ответ:",
+)
 
 
 class AeonRuntime:
@@ -137,6 +160,7 @@ class AeonRuntime:
         active_goals = self.goals.select_for_context()
         memory_context = self._build_memory_context(active_goals)
         text, mode, graph_id = self.execution.execute(request, memory_context=memory_context)
+        text = public_response_text(text)
 
         post_governance = self.governance.evaluate(
             request=request,
@@ -244,8 +268,8 @@ class AeonRuntime:
 
     def _execute_heartbeat_action(
         self,
-        tick,
-        governance,
+        tick: ActiveInferenceTick,
+        governance: GovernanceReport,
     ) -> dict[str, object]:
         effects: dict[str, object] = {}
         snapshot = tick.snapshot
@@ -302,7 +326,7 @@ class AeonRuntime:
         *,
         trace_id: str,
         request: AeonRequest,
-        constitutional,
+        constitutional: ConstitutionalVerdict,
         reason: str,
     ) -> AeonResponse:
         governance = self.governance.evaluate(
@@ -388,3 +412,41 @@ class AeonRuntime:
             output_path=persona_dir,
         )
         return IdentityCore.from_directory(persona_dir)
+
+
+def public_response_text(text: str) -> str:
+    """Return a user-facing response with hidden reasoning markers removed."""
+    stripped = text.strip()
+    if not stripped:
+        return stripped
+
+    marker_index = _first_marker_index(stripped, REASONING_MARKERS)
+    has_markdown_artifact = stripped.startswith(("**\n*", "** *"))
+    if marker_index is None and not has_markdown_artifact:
+        return stripped
+
+    if marker_index is not None:
+        final = _extract_after_marker(stripped, FINAL_ANSWER_MARKERS)
+        if final:
+            return final
+
+        prefix = stripped[:marker_index].strip()
+        if prefix:
+            return prefix
+
+    return (
+        "Сейчас запрос проходит проверку правил, получает контекст целей "
+        "и памяти и передается в исполнительный слой."
+    )
+
+
+def _first_marker_index(text: str, markers: tuple[str, ...]) -> int | None:
+    indexes = [index for marker in markers if (index := text.find(marker)) >= 0]
+    return min(indexes) if indexes else None
+
+
+def _extract_after_marker(text: str, markers: tuple[str, ...]) -> str:
+    for marker in markers:
+        if marker in text:
+            return text.split(marker, maxsplit=1)[1].strip()
+    return ""

@@ -18,6 +18,7 @@ MIYA_PROVIDER_ENV = "MIYA_PROVIDER"
 MIYA_OMLX_BASE_URL_ENV = "MIYA_OMLX_BASE_URL"
 MIYA_OMLX_MODEL_ENV = "MIYA_OMLX_MODEL"
 MIYA_OMLX_API_KEY_ENV = "MIYA_OMLX_API_KEY"
+MIYA_OMLX_DISABLE_THINKING_ENV = "MIYA_OMLX_DISABLE_THINKING"
 DEFAULT_OMLX_BASE_URL = "http://127.0.0.1:8010"
 
 MLX_MODEL_ALIASES: dict[str, str] = {
@@ -126,7 +127,9 @@ class OMLXModelProvider:
         messages: list[dict[str, str]] = []
         if request.system_prompt:
             messages.append({"role": "system", "content": request.system_prompt})
-        messages.append({"role": "user", "content": request.prompt})
+        messages.append(
+            {"role": "user", "content": self._prepare_user_prompt(request.prompt, model_id)}
+        )
         payload = {
             "model": model_id,
             "messages": messages,
@@ -171,6 +174,17 @@ class OMLXModelProvider:
             return configured
         ids = model_ids if model_ids is not None else self.list_model_ids(timeout=5)
         return ids[0] if ids else None
+
+    @staticmethod
+    def _prepare_user_prompt(prompt: str, model_id: str) -> str:
+        if not _omlx_thinking_disabled() or "qwen" not in model_id.casefold():
+            return prompt
+        return (
+            f"{prompt.strip()}\n\n"
+            "/no_think\n"
+            "Отвечай на языке пользователя. Дай только финальный ответ. "
+            "Не выводи внутреннее рассуждение или системный контекст."  # noqa: RUF001
+        )
 
     def _request_json(
         self,
@@ -328,6 +342,11 @@ def default_provider_name() -> str:
 def available_providers() -> list[ModelProvider]:
     """Return model providers known to the runtime."""
     return [MockModelProvider(), OMLXModelProvider(), MLXModelProvider()]
+
+
+def _omlx_thinking_disabled() -> bool:
+    value = os.environ.get(MIYA_OMLX_DISABLE_THINKING_ENV, "1").casefold()
+    return value not in {"0", "false", "no", "off"}
 
 
 def provider_infos() -> list[ProviderInfo]:

@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 
 from aeon.config import MIYA_PROVIDER_ENV, default_aeon_config
-from aeon.runtime import AeonRuntime
+from aeon.runtime import AeonRuntime, public_response_text
 from aeon.types import AeonRequest, ExecutionMode
 
 
@@ -31,6 +31,34 @@ def test_aeon_runtime_ask_uses_chat_fast_path(tmp_path: Path) -> None:
     assert response.execution_mode == ExecutionMode.CHAT
     assert response.text
     assert response.trace_id
+
+
+def test_aeon_chat_keeps_memory_context_out_of_user_message(tmp_path: Path) -> None:
+    runtime = AeonRuntime(base_dir=tmp_path)
+    runtime.ask(AeonRequest(message="Привет!"))
+
+    response = runtime.ask(AeonRequest(message="Что ты помнишь?"))
+
+    assert response.execution_mode == ExecutionMode.CHAT
+    assert "[AEON memory context]" not in response.text
+
+
+def test_aeon_public_response_hides_reasoning() -> None:
+    raw = "Thinking Process:\ninternal notes\n\nFinal Answer: AEON держит цели и память в фокусе."
+
+    assert public_response_text(raw) == "AEON держит цели и память в фокусе."
+
+
+def test_aeon_public_response_falls_back_to_readable_summary() -> None:
+    raw = "Thinking Process:\ninternal notes only"
+
+    assert public_response_text(raw).startswith("Сейчас запрос проходит проверку правил")
+
+
+def test_aeon_public_response_hides_markdown_artifact() -> None:
+    raw = "**\n* What is AEON doing right now? It's processing"
+
+    assert public_response_text(raw).startswith("Сейчас запрос проходит проверку правил")
 
 
 def test_aeon_runtime_ask_uses_graph_for_complex_task(tmp_path: Path) -> None:

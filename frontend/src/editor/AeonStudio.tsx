@@ -29,6 +29,28 @@ interface AeonMessage {
   graphId?: string | null;
 }
 
+function readableAeonText(text: string): string {
+  const memoryMarker = '[AEON memory context]';
+  const reasoningMarkers = ['Thinking Process:', 'Thinking process:', 'Reasoning:', 'Chain of thought:', 'Thought process:'];
+  const finalMarkers = ['Final Answer:', 'Final answer:', 'Answer:', 'Ответ:'];
+  const memoryIndex = text.indexOf(memoryMarker);
+  const reasoningIndexes = reasoningMarkers.map((marker) => text.indexOf(marker)).filter((index) => index >= 0);
+  const reasoningIndex = reasoningIndexes.length ? Math.min(...reasoningIndexes) : -1;
+  const hasMarkdownArtifact = text.startsWith('**\n*') || text.startsWith('** *');
+
+  if (memoryIndex === -1 && reasoningIndex === -1 && !hasMarkdownArtifact) return text;
+
+  const finalMarker = finalMarkers.find((marker) => text.includes(marker));
+  if (finalMarker) return text.split(finalMarker, 2)[1].trim();
+
+  if (!hasMarkdownArtifact) {
+    const markerIndex = [memoryIndex, reasoningIndex].filter((index) => index >= 0).sort((a, b) => a - b)[0];
+    const visible = text.slice(0, markerIndex).trim();
+    if (visible && !visible.startsWith('morning_consolidation:')) return visible;
+  }
+  return 'Сейчас запрос проходит проверку правил, получает контекст целей и памяти и передается в исполнительный слой.';
+}
+
 export function AeonStudio({ onTraceId }: AeonStudioProps) {
   const [providers, setProviders] = useState<MiaosProviderInfo[]>([]);
   const [selectedProvider, setSelectedProvider] = useState(DEFAULT_PROVIDER);
@@ -43,6 +65,7 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const tickInFlight = useRef(false);
+  const providerTouched = useRef(false);
 
   const refreshStatus = useCallback(async () => {
     try {
@@ -60,7 +83,7 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
         setProviders(providerList);
         setSelectedProvider((prev) => {
           const current = providerList.find((item) => item.name === prev);
-          if (current?.available) return prev;
+          if (providerTouched.current && current?.available) return prev;
           return pickDefaultProvider(providerList);
         });
       } catch {
@@ -269,6 +292,24 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
         </div>
       </div>
 
+      {messages.length > 0 && (
+        <ol className="miya-chat-log miya-aeon-chat-log">
+          {messages.map((message) => (
+            <li
+              key={message.id}
+              className={`miya-chat-msg miya-chat-msg-${message.role}${message.blocked ? ' miya-chat-msg-blocked' : ''}`}
+            >
+              <span className="miya-chat-msg-label">
+                {message.role === 'user' ? 'Вы' : message.role === 'system' ? 'AEON system' : 'AEON'}
+                {message.mode ? ` · ${message.mode}` : ''}
+                {message.graphId ? ` · ${message.graphId}` : ''}
+              </span>
+              <p className="miya-chat-msg-text">{readableAeonText(message.text)}</p>
+            </li>
+          ))}
+        </ol>
+      )}
+
       {status && (
         <details className="miya-advanced-section miya-aeon-runtime-details">
           <summary>
@@ -412,7 +453,10 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
               <span>Провайдер</span>
               <select
                 value={selectedProvider}
-                onChange={(e) => setSelectedProvider(e.target.value)}
+                onChange={(e) => {
+                  providerTouched.current = true;
+                  setSelectedProvider(e.target.value);
+                }}
                 disabled={busy}
               >
                 {(providers.length ? providers : [{ name: 'mock', available: true, description: '' }]).map(
@@ -475,25 +519,6 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
           )}
         </div>
       </details>
-
-      {messages.length > 0 && (
-        <ol className="miya-chat-log">
-          {messages.map((message) => (
-            <li
-              key={message.id}
-              className={`miya-chat-msg miya-chat-msg-${message.role}${message.blocked ? ' miya-chat-msg-blocked' : ''}`}
-            >
-              <span className="miya-chat-msg-label">
-                {message.role === 'user' ? 'Вы' : message.role === 'system' ? 'AEON system' : 'AEON'}
-                {message.traceId ? ` · ${message.traceId}` : ''}
-                {message.mode ? ` · ${message.mode}` : ''}
-                {message.graphId ? ` · ${message.graphId}` : ''}
-              </span>
-              <p className="miya-chat-msg-text">{message.text}</p>
-            </li>
-          ))}
-        </ol>
-      )}
 
       {error && <pre className="miya-run-error">{error}</pre>}
     </section>

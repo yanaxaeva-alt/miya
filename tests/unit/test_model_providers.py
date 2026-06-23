@@ -96,6 +96,9 @@ def test_omlx_provider_generates_with_openai_compatible_response(
     assert calls[-1][1] == "/v1/chat/completions"
     assert calls[-1][2]
     assert calls[-1][2]["model"] == "qwen-big"
+    user_message = calls[-1][2]["messages"][-1]["content"]
+    assert "/no_think" in user_message
+    assert "языке пользователя" in user_message
 
 
 def test_omlx_provider_uses_env_model(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -122,6 +125,35 @@ def test_omlx_provider_uses_env_model(monkeypatch: pytest.MonkeyPatch) -> None:
     response = provider.generate(InferenceRequest(prompt="hello", model_id="mock-aeon"))
 
     assert response.model_id == "better-local-model"
+
+
+def test_omlx_no_think_can_be_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Operators can disable qwen no-think prompting for oMLX."""
+    provider = OMLXModelProvider(base_url="http://127.0.0.1:8010")
+    monkeypatch.setenv("MIYA_OMLX_DISABLE_THINKING", "false")
+    monkeypatch.setenv(MIYA_OMLX_MODEL_ENV, "Qwen3.5-9B-8bit")
+    payloads: list[dict[str, Any]] = []
+
+    def fake_request_json(
+        method: str,
+        path: str,
+        *,
+        payload: dict[str, Any] | None = None,
+        timeout: float,
+    ) -> dict[str, Any]:
+        assert method == "POST"
+        assert path == "/v1/chat/completions"
+        assert timeout > 0
+        assert payload
+        payloads.append(payload)
+        return {"choices": [{"message": {"content": "answer"}}]}
+
+    monkeypatch.setattr(provider, "_request_json", fake_request_json)
+
+    provider.generate(InferenceRequest(prompt="hello"))
+
+    user_message = payloads[-1]["messages"][-1]["content"]
+    assert user_message == "hello"
 
 
 def test_provider_infos_show_mlx_default_model(monkeypatch: pytest.MonkeyPatch) -> None:

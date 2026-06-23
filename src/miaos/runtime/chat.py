@@ -37,7 +37,7 @@ class ChatSession:
         self.policy_gate = policy_gate or PolicyGate()
         self.personality_guard = personality_guard or PersonalityGuard()
 
-    def run_turn(self, user_message: str) -> ChatTurn:
+    def run_turn(self, user_message: str, *, extra_system_context: str = "") -> ChatTurn:
         """Run one chat turn through personality, provider, safety, and audit."""
         trace_id = new_trace_id()
         forbidden_action = detect_forbidden_tool_intent(user_message)
@@ -63,6 +63,8 @@ class ChatSession:
             )
 
         context = self.personality_guard.build_inference_context(self.persona)
+        if extra_system_context.strip():
+            context = f"{context}\n\nAEON memory context:\n{extra_system_context.strip()}"
         response = self.provider.generate(
             InferenceRequest(
                 prompt=user_message,
