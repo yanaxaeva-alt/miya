@@ -302,6 +302,26 @@ def test_api_state_startup_syncs_mia_persona_from_settings(
     monkeypatch.delenv(MIYA_OMLX_MODEL_ENV, raising=False)
 
 
+def test_api_state_startup_syncs_mia_persona_from_env(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Environment-selected provider/model also updates Mia's binding on startup."""
+    client = _client(tmp_path)
+    _create_demo_persona(client)
+    monkeypatch.setenv(MIYA_PROVIDER_ENV, "omlx")
+    monkeypatch.setenv(MIYA_OMLX_MODEL_ENV, "Qwen3.5-9B-8bit")
+
+    MiaOSApiState(tmp_path)
+    package = load_persona_package(tmp_path / "personas" / "mia")
+
+    assert package.model_binding.provider == "omlx"
+    assert package.model_binding.model_id == "Qwen3.5-9B-8bit"
+
+    monkeypatch.delenv(MIYA_PROVIDER_ENV, raising=False)
+    monkeypatch.delenv(MIYA_OMLX_MODEL_ENV, raising=False)
+
+
 def test_api_memory_profile_and_notes(tmp_path: Path) -> None:
     """Memory endpoints manage profile facts and domain notes."""
     client = _client(tmp_path)

@@ -1,6 +1,7 @@
 """Local FastAPI backend for the future desktop editor."""
 
 import json
+import os
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -25,6 +26,9 @@ from miaos.models import (
     evaluate_models_for_profile,
 )
 from miaos.models.providers import (
+    MIYA_MLX_MODEL_ENV,
+    MIYA_OMLX_MODEL_ENV,
+    MIYA_PROVIDER_ENV,
     OMLXModelProvider,
     default_provider_name,
     provider_infos,
@@ -114,12 +118,13 @@ class MiaOSApiState:
     def sync_default_persona_binding(self, settings: RuntimeSettings | None = None) -> None:
         """Sync Mia's model binding with persisted provider settings when possible."""
         current = settings or self.settings_store.load()
+        provider = current.provider or os.environ.get(MIYA_PROVIDER_ENV)
         model_id = None
-        if current.provider == "omlx":
-            model_id = current.omlx_model
-        elif current.provider == "mlx":
-            model_id = current.mlx_model
-        if not current.provider or not model_id:
+        if provider == "omlx":
+            model_id = current.omlx_model or os.environ.get(MIYA_OMLX_MODEL_ENV)
+        elif provider == "mlx":
+            model_id = current.mlx_model or os.environ.get(MIYA_MLX_MODEL_ENV)
+        if not provider or not model_id:
             return
         mia_path = self.persona_dir / "mia"
         if not mia_path.is_dir():
@@ -127,7 +132,7 @@ class MiaOSApiState:
         try:
             update_persona_model_binding(
                 mia_path,
-                provider=current.provider,
+                provider=provider,
                 model_id=model_id,
             )
         except PersonaPackageError:
