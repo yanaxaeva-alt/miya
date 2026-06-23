@@ -2,12 +2,11 @@
 
 from pathlib import Path
 
-from miaos.observability import DecisionLog
-from miaos.safety.approval_queue import ApprovalQueue
-
 from aeon.layers.l7_governance import MetaGovernance
 from aeon.runtime import AeonRuntime
 from aeon.types import AeonRequest
+from miaos.observability import DecisionLog
+from miaos.safety.approval_queue import ApprovalQueue
 
 
 def test_governance_flags_personality_drift() -> None:

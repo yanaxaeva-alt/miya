@@ -1,7 +1,7 @@
 """Tests for sandbox tool registry."""
 
-from miaos.tools import list_tools
 from miaos.safety.actions import ActionClass
+from miaos.tools import list_tools
 
 
 def test_list_tools_returns_four_sandbox_entries() -> None:

@@ -145,7 +145,7 @@ class ModelRegistry:
         placeholders = ", ".join("?" for _ in repo_list)
         with self._connect() as connection:
             cursor = connection.execute(
-                f"DELETE FROM models WHERE repo IN ({placeholders})",  # noqa: S608
+                f"DELETE FROM models WHERE repo IN ({placeholders})",
                 repo_list,
             )
         return int(cursor.rowcount)

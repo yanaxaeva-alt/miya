@@ -1,6 +1,6 @@
 """Sandbox tool registry for the v0.5 developer preview."""
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 from miaos.safety.actions import ActionClass
 

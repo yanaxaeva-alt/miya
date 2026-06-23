@@ -298,6 +298,8 @@ def test_graph_validate_and_run_commands(tmp_path: Path) -> None:
             str(graph_path),
             "--input",
             "draft a post",
+            "--provider",
+            "mock",
             "--log",
             str(log_path),
             "--checkpoint-db",

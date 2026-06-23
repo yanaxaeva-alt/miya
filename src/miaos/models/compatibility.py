@@ -4,7 +4,7 @@ from enum import StrEnum
 
 from pydantic import BaseModel, Field
 
-from miaos.models.manager import ModelManager, REJECTED_CERTIFICATIONS
+from miaos.models.manager import REJECTED_CERTIFICATIONS, ModelManager
 from miaos.models.records import LabCertificationStatus, ModelLifecycleState, ModelRecord, ModelRole
 from miaos.runtime.profiles import RuntimeProfile
 
