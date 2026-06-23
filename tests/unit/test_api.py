@@ -47,13 +47,14 @@ def test_api_health(tmp_path: Path) -> None:
     assert "aeon_version" in body
 
 
-def test_api_providers_lists_mock_and_mlx(tmp_path: Path) -> None:
+def test_api_providers_lists_available_provider_options(tmp_path: Path) -> None:
     """Providers endpoint lists known providers."""
     response = _client(tmp_path).get("/providers")
 
     assert response.status_code == HTTP_OK
     names = {item["name"] for item in response.json()}
-    assert names == {"mock", "mlx"}
+    assert names == {"mock", "omlx", "mlx"}
+    assert all("default" in item for item in response.json())
 
 
 def test_api_tools_lists_sandbox_tools(tmp_path: Path) -> None:

@@ -201,6 +201,8 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
     }
   }, [refreshStatus]);
 
+  const activeGoals = status?.active_goals ?? [];
+
   return (
     <section id="miya-aeon-studio" className="miya-aeon-studio">
       <div className="miya-run-header">
@@ -351,6 +353,56 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
           Добавить цель
         </button>
       </div>
+
+      <section className="miya-aeon-saved-goals" aria-label="Сохранённые цели AEON">
+        <div className="miya-aeon-saved-goals-head">
+          <div>
+            <h3>Сохранённые цели</h3>
+            <p>
+              Хранятся в <code>MIYA_DATA_DIR/aeon_goals.json</code>. По умолчанию:{' '}
+              <code>~/Documents/miya/.miaos/aeon_goals.json</code>.
+            </p>
+          </div>
+          <button
+            type="button"
+            className="miya-btn miya-btn-secondary"
+            onClick={() => void refreshStatus()}
+            disabled={busy}
+          >
+            Обновить
+          </button>
+        </div>
+        {activeGoals.length > 0 ? (
+          <ul className="miya-aeon-goals miya-aeon-saved-goals-list">
+            {activeGoals.map((goal: MiaosAeonGoal) => (
+              <li key={goal.id} className="miya-aeon-goal-item">
+                <div className="miya-aeon-goal-head">
+                  <strong>{goal.title}</strong>
+                  <span className="miya-aeon-status-meta">
+                    {goal.source} · p={goal.priority.toFixed(2)}
+                  </span>
+                </div>
+                <p className="miya-aeon-status-meta">{goal.description}</p>
+                <div className="miya-aeon-progress" aria-label={`progress ${goal.progress}`}>
+                  <span style={{ width: `${Math.round(goal.progress * 100)}%` }} />
+                </div>
+                {goal.source !== 'seed' && (
+                  <button
+                    type="button"
+                    className="miya-btn miya-btn-secondary miya-aeon-goal-deactivate"
+                    onClick={() => void deactivateGoal(goal.id)}
+                    disabled={busy}
+                  >
+                    Деактивировать
+                  </button>
+                )}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="miya-run-hint">Пока активных целей нет или статус AEON ещё не загружен.</p>
+        )}
+      </section>
 
       <details className="miya-advanced-section">
         <summary>Advanced controls</summary>

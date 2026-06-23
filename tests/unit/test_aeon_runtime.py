@@ -2,6 +2,9 @@
 
 from pathlib import Path
 
+import pytest
+
+from aeon.config import MIYA_PROVIDER_ENV, default_aeon_config
 from aeon.runtime import AeonRuntime
 from aeon.types import AeonRequest, ExecutionMode
 
@@ -12,6 +15,12 @@ def test_aeon_runtime_status_bootstraps_persona(tmp_path: Path) -> None:
 
     assert status["identity"] == "Mia"
     assert len(status["active_goals"]) >= 3
+
+
+def test_aeon_config_provider_can_be_overridden(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(MIYA_PROVIDER_ENV, "mlx")
+
+    assert default_aeon_config().provider == "mlx"
 
 
 def test_aeon_runtime_ask_uses_chat_fast_path(tmp_path: Path) -> None:

@@ -1,20 +1,4 @@
-import { SimpleGraph } from './editor/SimpleGraph';
-import { RunConsole } from './editor/RunConsole';
-import { TraceViewer } from './editor/TraceViewer';
-import { ApprovalQueue } from './editor/ApprovalQueue';
-import { ModelStudio } from './editor/ModelStudio';
-import { PersonaStudio } from './editor/PersonaStudio';
-import { MemoryStudio } from './editor/MemoryStudio';
-import { ChatStudio } from './editor/ChatStudio';
-import { AeonStudio } from './editor/AeonStudio';
-import { GraphLibrary } from './editor/GraphLibrary';
-import { ToolRegistry } from './editor/ToolRegistry';
-import { QualityLab } from './editor/QualityLab';
-import { MiaScenario } from './editor/MiaScenario';
-import { WelcomePanel } from './editor/WelcomePanel';
-import { RuntimeProfileStudio } from './editor/RuntimeProfileStudio';
-import { TemplateRegistry } from './editor/TemplateRegistry';
-import { useEffect, useState, type ReactNode } from 'react';
+import { lazy, Suspense, useEffect, useState, type ReactNode } from 'react';
 import type { Graph } from '@antv/x6';
 import { checkMiaosHealth, type MiaosGraphRun, type MiaosModelRecord } from './editor/miaosApi';
 import { setStatus } from './miyaBridge';
@@ -29,6 +13,27 @@ const TABS: Array<{ id: AppTab; label: string; description: string }> = [
   { id: 'models', label: 'Models & Persona', description: 'профиль железа, модели, persona' },
   { id: 'quality', label: 'Quality & Tools', description: 'tools, evals, traces' },
 ];
+
+const SimpleGraph = lazy(() => import('./editor/SimpleGraph').then((module) => ({ default: module.SimpleGraph })));
+const RunConsole = lazy(() => import('./editor/RunConsole').then((module) => ({ default: module.RunConsole })));
+const TraceViewer = lazy(() => import('./editor/TraceViewer').then((module) => ({ default: module.TraceViewer })));
+const ApprovalQueue = lazy(() => import('./editor/ApprovalQueue').then((module) => ({ default: module.ApprovalQueue })));
+const ModelStudio = lazy(() => import('./editor/ModelStudio').then((module) => ({ default: module.ModelStudio })));
+const PersonaStudio = lazy(() => import('./editor/PersonaStudio').then((module) => ({ default: module.PersonaStudio })));
+const MemoryStudio = lazy(() => import('./editor/MemoryStudio').then((module) => ({ default: module.MemoryStudio })));
+const ChatStudio = lazy(() => import('./editor/ChatStudio').then((module) => ({ default: module.ChatStudio })));
+const AeonStudio = lazy(() => import('./editor/AeonStudio').then((module) => ({ default: module.AeonStudio })));
+const GraphLibrary = lazy(() => import('./editor/GraphLibrary').then((module) => ({ default: module.GraphLibrary })));
+const ToolRegistry = lazy(() => import('./editor/ToolRegistry').then((module) => ({ default: module.ToolRegistry })));
+const QualityLab = lazy(() => import('./editor/QualityLab').then((module) => ({ default: module.QualityLab })));
+const MiaScenario = lazy(() => import('./editor/MiaScenario').then((module) => ({ default: module.MiaScenario })));
+const WelcomePanel = lazy(() => import('./editor/WelcomePanel').then((module) => ({ default: module.WelcomePanel })));
+const RuntimeProfileStudio = lazy(() =>
+  import('./editor/RuntimeProfileStudio').then((module) => ({ default: module.RuntimeProfileStudio })),
+);
+const TemplateRegistry = lazy(() =>
+  import('./editor/TemplateRegistry').then((module) => ({ default: module.TemplateRegistry })),
+);
 
 function TabIntro({
   title,
@@ -65,6 +70,10 @@ function AdvancedSection({
       <div className="miya-advanced-section-body">{children}</div>
     </details>
   );
+}
+
+function TabLoading() {
+  return <div className="miya-tab-loading">Загружаю вкладку…</div>;
 }
 
 export default function App() {
@@ -155,37 +164,38 @@ export default function App() {
       </nav>
 
       <section className="miya-tab-panel" aria-live="polite">
-        {activeTab === 'overview' && (
-          <div className="miya-tab-stack">
-            <TabIntro
-              title="Главная"
-              body="Выберите, что хотите сделать сейчас. Подробный checklist спрятан ниже, чтобы не мешать работе."
-            />
-            <section className="miya-start-cards" aria-label="Основные действия">
-              <button type="button" className="miya-start-card miya-start-card-primary" onClick={() => setActiveTab('aeon')}>
-                <span>1</span>
-                <strong>Работать с AEON</strong>
-                <em>Спросить Мию, добавить цель, выполнить consolidation.</em>
-              </button>
-              <button type="button" className="miya-start-card" onClick={() => setActiveTab('graph')}>
-                <span>2</span>
-                <strong>Собрать graph</strong>
-                <em>Открыть холст, шаблоны и Run Console.</em>
-              </button>
-              <button type="button" className="miya-start-card" onClick={() => setActiveTab('models')}>
-                <span>3</span>
-                <strong>Проверить настройки</strong>
-                <em>Runtime profile, модели и persona package.</em>
-              </button>
-            </section>
-            <AdvancedSection title="Setup checklist">
-              <WelcomePanel />
-            </AdvancedSection>
-          </div>
-        )}
+        <Suspense fallback={<TabLoading />}>
+          {activeTab === 'overview' && (
+            <div className="miya-tab-stack">
+              <TabIntro
+                title="Главная"
+                body="Выберите, что хотите сделать сейчас. Подробный checklist спрятан ниже, чтобы не мешать работе."
+              />
+              <section className="miya-start-cards" aria-label="Основные действия">
+                <button type="button" className="miya-start-card miya-start-card-primary" onClick={() => setActiveTab('aeon')}>
+                  <span>1</span>
+                  <strong>Работать с AEON</strong>
+                  <em>Спросить Мию, добавить цель, выполнить consolidation.</em>
+                </button>
+                <button type="button" className="miya-start-card" onClick={() => setActiveTab('graph')}>
+                  <span>2</span>
+                  <strong>Собрать graph</strong>
+                  <em>Открыть холст, шаблоны и Run Console.</em>
+                </button>
+                <button type="button" className="miya-start-card" onClick={() => setActiveTab('models')}>
+                  <span>3</span>
+                  <strong>Проверить настройки</strong>
+                  <em>Runtime profile, модели и persona package.</em>
+                </button>
+              </section>
+              <AdvancedSection title="Setup checklist">
+                <WelcomePanel />
+              </AdvancedSection>
+            </div>
+          )}
 
-        {activeTab === 'aeon' && (
-          <div className="miya-tab-stack">
+          {activeTab === 'aeon' && (
+            <div className="miya-tab-stack">
             <TabIntro
               title="AEON"
               body="Основной сценарий: спросить Мию, добавить цель, выполнить consolidation. Остальное спрятано справа как контроль и аудит."
@@ -218,11 +228,11 @@ export default function App() {
                 <AdvancedSection title="Trace Viewer">{traceViewer}</AdvancedSection>
               </aside>
             </div>
-          </div>
-        )}
+            </div>
+          )}
 
-        {activeTab === 'graph' && (
-          <div className="miya-tab-stack">
+          {activeTab === 'graph' && (
+            <div className="miya-tab-stack">
             <TabIntro
               title="Graph Builder"
               body="Одна зона для визуального графа: соберите узлы на холсте, затем запустите через Run Console. Templates и Library спрятаны ниже."
@@ -253,11 +263,11 @@ export default function App() {
                 <GraphLibrary graph={graph} />
               </div>
             </AdvancedSection>
-          </div>
-        )}
+            </div>
+          )}
 
-        {activeTab === 'memory' && (
-          <div className="miya-tab-stack">
+          {activeTab === 'memory' && (
+            <div className="miya-tab-stack">
             <TabIntro
               title="Memory"
               body="Сначала обычный чат, затем просмотр эпизодов и заметок памяти. Так проще проверить, что Мия запоминает."
@@ -275,11 +285,11 @@ export default function App() {
             <AdvancedSection title="Memory Store">
               <MemoryStudio />
             </AdvancedSection>
-          </div>
-        )}
+            </div>
+          )}
 
-        {activeTab === 'models' && (
-          <div className="miya-tab-stack">
+          {activeTab === 'models' && (
+            <div className="miya-tab-stack">
             <TabIntro
               title="Models & Persona"
               body="Настройка окружения: выберите профиль железа, проверьте модели и persona Mia. Обычно это делается один раз."
@@ -289,11 +299,11 @@ export default function App() {
             <AdvancedSection title="Persona Package">
               <PersonaStudio />
             </AdvancedSection>
-          </div>
-        )}
+            </div>
+          )}
 
-        {activeTab === 'quality' && (
-          <div className="miya-tab-stack">
+          {activeTab === 'quality' && (
+            <div className="miya-tab-stack">
             <TabIntro
               title="Quality & Tools"
               body="Диагностика и проверка качества. Основной блок — Quality Lab; инструменты и trace доступны как advanced."
@@ -303,8 +313,9 @@ export default function App() {
               <ToolRegistry />
             </AdvancedSection>
             <AdvancedSection title="Trace Viewer">{traceViewer}</AdvancedSection>
-          </div>
-        )}
+            </div>
+          )}
+        </Suspense>
       </section>
     </main>
   );

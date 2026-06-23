@@ -1,5 +1,6 @@
 """AEON configuration loading."""
 
+import os
 from pathlib import Path
 
 import yaml
@@ -67,6 +68,7 @@ class AeonConfig(BaseModel):
 
 
 DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[2] / "config" / "aeon.default.yaml"
+MIYA_PROVIDER_ENV = "MIYA_PROVIDER"
 
 
 def load_aeon_config(path: Path | None = None) -> AeonConfig:
@@ -79,12 +81,12 @@ def load_aeon_config(path: Path | None = None) -> AeonConfig:
     if not isinstance(raw, dict):
         msg = f"AEON config must be a mapping: {config_path}"
         raise ValueError(msg)
-    return AeonConfig.model_validate(raw)
+    return _apply_env_overrides(AeonConfig.model_validate(raw))
 
 
 def default_aeon_config() -> AeonConfig:
     """Return built-in defaults when no config file exists."""
-    return AeonConfig(
+    return _apply_env_overrides(AeonConfig(
         goal_seeds=[
             GoalSeedConfig(
                 id="understand-user",
@@ -124,4 +126,12 @@ def default_aeon_config() -> AeonConfig:
                 "Default to concise, clear Russian responses.",
             ],
         ),
-    )
+    ))
+
+
+def _apply_env_overrides(config: AeonConfig) -> AeonConfig:
+    """Apply process-level runtime overrides for local deployments."""
+    provider = os.environ.get(MIYA_PROVIDER_ENV)
+    if provider:
+        return config.model_copy(update={"provider": provider})
+    return config

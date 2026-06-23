@@ -31,6 +31,42 @@ cd ~/Documents/miya/frontend
 
 Do not start a second `pnpm dev` if `http://localhost:5173` is already open.
 
+## Local MLX Model
+
+The backend can use a local MLX model as the default provider:
+
+```bash
+cd ~/Documents/miya/frontend
+MIYA_PROVIDER=mlx MIYA_MLX_MODEL="/absolute/path/to/mlx-model" ./scripts/start-miaos-backend.sh
+```
+
+`MIYA_MLX_MODEL` can be an absolute local model directory or a HuggingFace/MLX repo id, for example:
+
+```bash
+MIYA_PROVIDER=mlx MIYA_MLX_MODEL="mlx-community/Qwen2.5-7B-Instruct-4bit" ./scripts/start-miaos-backend.sh
+```
+
+## oMLX Server Provider
+
+If oMLX already has a stronger model loaded, run oMLX on a separate port and let MiaOS call it as an OpenAI-compatible provider:
+
+```bash
+~/.omlx/bin/omlx serve --model-dir ~/.omlx/models --port 8010
+```
+
+Then start MiaOS with the `omlx` provider:
+
+```bash
+cd ~/Documents/miya/frontend
+MIYA_PROVIDER=omlx MIYA_OMLX_BASE_URL="http://127.0.0.1:8010" MIYA_OMLX_MODEL="your-model-id" ./scripts/start-miaos-backend.sh
+```
+
+Ports:
+
+- `8010` — oMLX model server
+- `8000` — MiaOS backend
+- `5173` — Miya Editor
+
 ## Checks
 
 ```bash

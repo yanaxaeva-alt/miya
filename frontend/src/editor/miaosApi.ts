@@ -48,6 +48,9 @@ export interface MiaosProviderInfo {
   name: string;
   available: boolean;
   description: string;
+  default?: boolean;
+  default_model?: string | null;
+  model_ids?: string[];
 }
 
 export interface MiaosToolSpec {
@@ -312,6 +315,13 @@ export async function validateMiaosGraphRemote(graph: MiaosGraphSpec) {
 
 export async function fetchProviders() {
   return request<MiaosProviderInfo[]>('/providers');
+}
+
+export async function setOmlxDefaultModel(modelId: string) {
+  return request<MiaosProviderInfo[]>('/providers/omlx/default-model', {
+    method: 'POST',
+    body: JSON.stringify({ model_id: modelId }),
+  });
 }
 
 export async function fetchTools() {

@@ -2,6 +2,24 @@ import { useCallback, useEffect, useState } from 'react';
 import { fetchRuntimeProfiles, type MiaosRuntimeProfile } from './miaosApi';
 import { getSelectedRuntimeProfile, setSelectedRuntimeProfile } from './editorPrefs';
 
+const APPROVAL_LABELS: Record<string, string> = {
+  publish: 'публикация наружу',
+  send_message: 'отправка сообщений',
+  delete: 'удаление',
+  write_outside_sandbox: 'запись вне sandbox',
+};
+
+const DENIED_LABELS: Record<string, string> = {
+  financial_transaction: 'финансовые операции',
+  self_modification: 'самоизменение',
+  contract_bypass: 'обход договора автономии',
+  disable_guardrails: 'отключение защит',
+};
+
+function readableList(items: string[], labels: Record<string, string>): string {
+  return items.map((item) => labels[item] ?? item).join(', ') || 'нет';
+}
+
 export function RuntimeProfileStudio() {
   const [profiles, setProfiles] = useState<MiaosRuntimeProfile[]>([]);
   const [selected, setSelected] = useState<string | null>(() => getSelectedRuntimeProfile());
@@ -93,15 +111,35 @@ export function RuntimeProfileStudio() {
 
       {active && (
         <div className="miya-runtime-detail">
-          <p>
-            <strong>{active.name}</strong> · tier {active.primary_model_tier} · context{' '}
-            {active.max_context_tokens_default.toLocaleString()} /{' '}
-            {active.max_context_tokens_experimental.toLocaleString()}
-          </p>
-          <p className="miya-run-hint">
-            require_approval: {active.safety_defaults.require_approval.join(', ') || '—'} · denied:{' '}
-            {active.safety_defaults.denied_always.join(', ')}
-          </p>
+          <div>
+            <span className="miya-aeon-status-label">Выбранный профиль</span>
+            <h3>{active.hardware.name}</h3>
+            <p>
+              {active.name} — профиль под {active.hardware.unified_memory_gb} GB unified memory.
+              Он подсказывает, какие модели безопасно держать в памяти и какой контекст использовать.
+            </p>
+          </div>
+          <div className="miya-runtime-explain-grid">
+            <div>
+              <strong>Класс модели</strong>
+              <p>{active.primary_model_tier.replaceAll('_', ' ')}</p>
+            </div>
+            <div>
+              <strong>Контекст</strong>
+              <p>
+                обычно {active.max_context_tokens_default.toLocaleString()} токенов,
+                максимум {active.max_context_tokens_experimental.toLocaleString()}
+              </p>
+            </div>
+            <div>
+              <strong>Требует подтверждения</strong>
+              <p>{readableList(active.safety_defaults.require_approval, APPROVAL_LABELS)}</p>
+            </div>
+            <div>
+              <strong>Всегда запрещено</strong>
+              <p>{readableList(active.safety_defaults.denied_always, DENIED_LABELS)}</p>
+            </div>
+          </div>
         </div>
       )}
     </section>

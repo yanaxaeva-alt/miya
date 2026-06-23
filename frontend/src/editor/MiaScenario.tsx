@@ -128,7 +128,7 @@ export function MiaScenario({ graph, lastRun, onModelsChange, compact = false }:
           type="button"
           className="miya-btn miya-btn-primary"
           onClick={() => void runBootstrap(false)}
-          disabled={bootstrapping || !graph}
+          disabled={bootstrapping}
         >
           {bootstrapping ? 'Подготовка…' : 'Подготовить всё'}
         </button>

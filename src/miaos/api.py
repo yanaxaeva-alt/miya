@@ -1,6 +1,7 @@
 """Local FastAPI backend for the future desktop editor."""
 
 import json
+import os
 from pathlib import Path
 from typing import Annotated, Any
 
@@ -10,6 +11,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
+from aeon import __version__ as aeon_version
+from aeon.config import load_aeon_config
+from aeon.paths import resolve_data_dir
+from aeon.runtime import AeonRuntime
+from aeon.types import AeonRequest
+from miaos import __version__ as miaos_version
 from miaos.executor import AgentGraphSpec, CheckpointStore, GraphEvent, GraphRunner
 from miaos.memory import MemoryStore
 from miaos.models import (
@@ -18,7 +25,13 @@ from miaos.models import (
     ModelRole,
     evaluate_models_for_profile,
 )
-from miaos.models.providers import default_provider_name, provider_infos, resolve_provider
+from miaos.models.providers import (
+    MIYA_OMLX_MODEL_ENV,
+    OMLXModelProvider,
+    default_provider_name,
+    provider_infos,
+    resolve_provider,
+)
 from miaos.models.registry import ModelNotFoundError
 from miaos.observability import DecisionLog
 from miaos.persona import (
@@ -40,13 +53,6 @@ from miaos.templates import (
     list_templates,
 )
 from miaos.tools import list_tools
-from miaos import __version__ as miaos_version
-
-from aeon import __version__ as aeon_version
-from aeon.config import load_aeon_config
-from aeon.paths import resolve_data_dir
-from aeon.runtime import AeonRuntime
-from aeon.types import AeonRequest
 
 DEV_CORS_ORIGINS = (
     "http://127.0.0.1:5173",
@@ -111,6 +117,12 @@ class ModelLabCertPayload(BaseModel):
     """Request body for updating model lab certification."""
 
     lab_cert: LabCertificationStatus | None = None
+
+
+class ProviderDefaultModelPayload(BaseModel):
+    """Request body for selecting a provider default model."""
+
+    model_id: str = Field(min_length=1)
 
 
 DEMO_MODEL_REPOS = [
@@ -393,6 +405,18 @@ def create_app(state: MiaOSApiState | None = None) -> FastAPI:  # noqa: PLR0915
     @app.get("/providers")
     def providers() -> list[dict[str, Any]]:
         """List model providers and availability."""
+        return [info.model_dump(mode="json") for info in provider_infos()]
+
+    @app.post("/providers/omlx/default-model")
+    def set_omlx_default_model(payload: ProviderDefaultModelPayload) -> list[dict[str, Any]]:
+        """Select the active oMLX model for subsequent local inference calls."""
+        provider = OMLXModelProvider()
+        if not provider.is_available():
+            raise HTTPException(status_code=400, detail="oMLX server is unavailable")
+        model_ids = provider.list_model_ids()
+        if payload.model_id not in model_ids:
+            raise HTTPException(status_code=404, detail=f"unknown oMLX model: {payload.model_id}")
+        os.environ[MIYA_OMLX_MODEL_ENV] = payload.model_id
         return [info.model_dump(mode="json") for info in provider_infos()]
 
     @app.get("/tools")
