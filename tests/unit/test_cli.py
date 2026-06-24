@@ -257,8 +257,8 @@ autonomy_contract:
 
     assert create_result.exit_code == 0
     assert chat_result.exit_code == 0
-    assert "[mock-cli-chat] hello" in chat_result.output
-    assert "[mock-cli-chat] second" in chat_result.output
+    assert "Тестовый режим: hello" in chat_result.output
+    assert "Тестовый режим: second" in chat_result.output
     assert len(log_path.read_text(encoding="utf-8").splitlines()) == CHAT_CLI_TURN_COUNT
 
 
