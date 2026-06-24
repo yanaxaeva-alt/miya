@@ -57,6 +57,18 @@ function poolRoleLabel(role: string): string {
   return role;
 }
 
+function compatibilityWarningText(warning: MiaosModelCompatibilityReport['warnings'][number]): string {
+  if (warning.code === 'archived') return 'модель архивирована и недоступна для выбора';
+  if (warning.code === 'lab_cert_rejected') return 'сертификация модели отклонена';
+  if (warning.code === 'lab_cert_pending') return 'сертификация модели ожидает проверки';
+  if (warning.code === 'lab_cert_missing') return 'сертификация модели ещё не записана';
+  if (warning.code === 'context_too_short') return 'контекст модели меньше рекомендованного профилем';
+  if (warning.code === 'memory_over_budget') return 'модель превышает бюджет памяти профиля';
+  if (warning.code === 'role_mismatch') return 'роль модели не совпадает с выбранной ролью пула';
+  if (warning.code === 'recommended_for_profile') return 'рекомендована для выбранного профиля';
+  return warning.message;
+}
+
 function warningClass(report: MiaosModelCompatibilityReport | undefined): string {
   if (!report) return 'miya-compat-unknown';
   if (report.recommended) return 'miya-compat-recommended';
@@ -422,7 +434,7 @@ export function ModelStudio({ models, onModelsChange }: ModelStudioProps) {
                                   key={`${warning.code}-${warning.message}`}
                                   className={`miya-compat-item miya-compat-item-${warning.severity}`}
                                 >
-                                  {warning.message}
+                                  {compatibilityWarningText(warning)}
                                 </li>
                               ))}
                             </ul>

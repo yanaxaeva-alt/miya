@@ -43,6 +43,8 @@ REASONING_MARKERS = (
     "Reasoning:",
     "Chain of thought:",
     "Thought process:",
+    "AEON memory context",
+    "provided context",
 )
 FINAL_ANSWER_MARKERS = (
     "Final Answer:",
@@ -421,7 +423,7 @@ def public_response_text(text: str) -> str:
         return stripped
 
     marker_index = _first_marker_index(stripped, REASONING_MARKERS)
-    has_markdown_artifact = stripped.startswith(("**\n*", "** *"))
+    has_markdown_artifact = stripped.startswith(("**", "* Based on"))
     if marker_index is None and not has_markdown_artifact:
         return stripped
 
@@ -431,7 +433,7 @@ def public_response_text(text: str) -> str:
             return final
 
         prefix = stripped[:marker_index].strip()
-        if prefix:
+        if prefix and not prefix.startswith(("**", "*")):
             return prefix
 
     return (

@@ -281,14 +281,32 @@ export interface MiaosTraceResponse {
   events: MiaosTraceEvent[];
 }
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
-  const response = await fetch(`${API_BASE}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      ...(init?.headers || {}),
-    },
-  });
+async function request<T>(path: string, init?: RequestInit, options?: { timeoutMs?: number }): Promise<T> {
+  const controller = options?.timeoutMs ? new AbortController() : null;
+  const timeout = controller
+    ? window.setTimeout(() => controller.abort(), options?.timeoutMs)
+    : null;
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}${path}`, {
+      ...init,
+      signal: init?.signal ?? controller?.signal,
+      headers: {
+        'Content-Type': 'application/json',
+        ...(init?.headers || {}),
+      },
+    });
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'AbortError') {
+      throw new Error('Сервер модели отвечает слишком долго. Проверьте oMLX или выберите тестовый режим.', {
+        cause: err,
+      });
+    }
+    throw err;
+  } finally {
+    if (timeout) window.clearTimeout(timeout);
+  }
 
   if (!response.ok) {
     let detail = response.statusText;
@@ -614,15 +632,19 @@ export async function sendAeonMessage(
   message: string,
   options?: { provider?: string; forceGraph?: boolean; packageId?: string },
 ) {
-  return request<MiaosAeonResponse>('/aeon/ask', {
-    method: 'POST',
-    body: JSON.stringify({
-      message,
-      provider: options?.provider ?? DEFAULT_MIAOS_PROVIDER,
-      force_graph: options?.forceGraph ?? false,
-      package_id: options?.packageId ?? 'mia',
-    }),
-  });
+  return request<MiaosAeonResponse>(
+    '/aeon/ask',
+    {
+      method: 'POST',
+      body: JSON.stringify({
+        message,
+        provider: options?.provider ?? DEFAULT_MIAOS_PROVIDER,
+        force_graph: options?.forceGraph ?? false,
+        package_id: options?.packageId ?? 'mia',
+      }),
+    },
+    { timeoutMs: 30_000 },
+  );
 }
 
 export async function runAeonTick(packageId = 'mia') {

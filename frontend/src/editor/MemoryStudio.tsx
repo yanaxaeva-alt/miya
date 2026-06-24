@@ -23,20 +23,30 @@ function formatTs(ts: string) {
 }
 
 function readableMemoryText(text: string): string {
-  const reasoningMarkers = ['Thinking Process:', 'Thinking process:', 'Reasoning:', 'Chain of thought:', 'Thought process:'];
+  const trimmed = text.trimStart();
+  const reasoningMarkers = [
+    'Thinking Process:',
+    'Thinking process:',
+    'Reasoning:',
+    'Chain of thought:',
+    'Thought process:',
+    'AEON memory context',
+    'provided context',
+  ];
   const finalMarkers = ['Final Answer:', 'Final answer:', 'Answer:', 'Ответ:'];
   const reasoningIndexes = reasoningMarkers.map((marker) => text.indexOf(marker)).filter((index) => index >= 0);
   const reasoningIndex = reasoningIndexes.length ? Math.min(...reasoningIndexes) : -1;
-  const hasMarkdownArtifact = text.startsWith('**\n*') || text.startsWith('** *');
+  const hasMarkdownArtifact = trimmed.startsWith('**') || trimmed.startsWith('* Based on');
+  const hasConsolidationRecord = trimmed.startsWith('morning_consolidation:');
 
-  if (reasoningIndex === -1 && !hasMarkdownArtifact) return text;
+  if (reasoningIndex === -1 && !hasMarkdownArtifact && !hasConsolidationRecord) return text;
 
   const finalMarker = finalMarkers.find((marker) => text.includes(marker));
   if (finalMarker) return text.split(finalMarker, 2)[1].trim();
 
-  if (!hasMarkdownArtifact) {
+  if (!hasMarkdownArtifact && !hasConsolidationRecord) {
     const visible = text.slice(0, reasoningIndex).trim();
-    if (visible) return visible;
+    if (visible && !visible.startsWith('*')) return visible;
   }
 
   return 'Служебный черновик скрыт. Этот старый эпизод можно удалить из памяти.';
@@ -231,7 +241,7 @@ export function MemoryStudio() {
                     Удалить
                   </button>
                 </div>
-                <p className="miya-memory-item-text">{note.content}</p>
+                <p className="miya-memory-item-text">{readableMemoryText(note.content)}</p>
               </li>
             ))}
           </ul>

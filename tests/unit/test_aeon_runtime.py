@@ -61,6 +61,12 @@ def test_aeon_public_response_hides_markdown_artifact() -> None:
     assert public_response_text(raw).startswith("Сейчас запрос проходит проверку правил")
 
 
+def test_aeon_public_response_hides_context_echo() -> None:
+    raw = '** * Based on the provided context (AEON memory context), active goals include "Understand".'
+
+    assert public_response_text(raw).startswith("Сейчас запрос проходит проверку правил")
+
+
 def test_aeon_runtime_ask_uses_graph_for_complex_task(tmp_path: Path) -> None:
     runtime = AeonRuntime(base_dir=tmp_path)
     response = runtime.ask(

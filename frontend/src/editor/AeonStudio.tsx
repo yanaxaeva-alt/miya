@@ -36,12 +36,20 @@ interface AeonMessage {
 
 function readableAeonText(text: string): string {
   const memoryMarker = '[AEON memory context]';
-  const reasoningMarkers = ['Thinking Process:', 'Thinking process:', 'Reasoning:', 'Chain of thought:', 'Thought process:'];
+  const reasoningMarkers = [
+    'Thinking Process:',
+    'Thinking process:',
+    'Reasoning:',
+    'Chain of thought:',
+    'Thought process:',
+    'AEON memory context',
+    'provided context',
+  ];
   const finalMarkers = ['Final Answer:', 'Final answer:', 'Answer:', 'Ответ:'];
   const memoryIndex = text.indexOf(memoryMarker);
   const reasoningIndexes = reasoningMarkers.map((marker) => text.indexOf(marker)).filter((index) => index >= 0);
   const reasoningIndex = reasoningIndexes.length ? Math.min(...reasoningIndexes) : -1;
-  const hasMarkdownArtifact = text.startsWith('**\n*') || text.startsWith('** *');
+  const hasMarkdownArtifact = text.trimStart().startsWith('**') || text.trimStart().startsWith('* Based on');
 
   if (memoryIndex === -1 && reasoningIndex === -1 && !hasMarkdownArtifact) return text;
 
@@ -51,7 +59,7 @@ function readableAeonText(text: string): string {
   if (!hasMarkdownArtifact) {
     const markerIndex = [memoryIndex, reasoningIndex].filter((index) => index >= 0).sort((a, b) => a - b)[0];
     const visible = text.slice(0, markerIndex).trim();
-    if (visible && !visible.startsWith('morning_consolidation:')) return visible;
+    if (visible && !visible.startsWith('*') && !visible.startsWith('morning_consolidation:')) return visible;
   }
   return 'Сейчас запрос проходит проверку правил, получает контекст целей и памяти и передается в исполнительный слой.';
 }
@@ -336,7 +344,7 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
               <div className="miya-aeon-status-card">
                 <span className="miya-aeon-status-label">Идентичность</span>
                 <strong>{status.identity}</strong>
-                <p className="miya-aeon-status-meta">модель: {status.provider}</p>
+                <p className="miya-aeon-status-meta">модель: {providerDisplayName(selectedProvider)}</p>
               </div>
               <div className="miya-aeon-status-card">
                 <span className="miya-aeon-status-label">Ценности</span>
