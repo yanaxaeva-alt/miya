@@ -36,6 +36,38 @@ const REPLAY_SPEEDS = [
   { label: 'Медленно', ms: 800 },
 ] as const;
 
+function runStatusLabel(status: string): string {
+  if (status === 'completed') return 'завершён';
+  if (status === 'running') return 'выполняется';
+  if (status === 'waiting_for_approval') return 'ожидает подтверждения';
+  if (status === 'failed') return 'ошибка';
+  return status;
+}
+
+function eventTypeLabel(eventType: string): string {
+  if (eventType === 'run_started') return 'запуск начат';
+  if (eventType === 'run_completed') return 'запуск завершён';
+  if (eventType === 'run_stopped') return 'запуск остановлен';
+  if (eventType === 'node_started') return 'узел запущен';
+  if (eventType === 'node_completed') return 'узел завершён';
+  if (eventType === 'approval_required') return 'нужно подтверждение';
+  if (eventType === 'human_approved') return 'подтверждено';
+  if (eventType === 'human_rejected') return 'отклонено';
+  return eventType;
+}
+
+function eventMessageLabel(message: string): string {
+  if (message.startsWith('Graph run started')) return 'Граф начал выполнение';
+  if (message.startsWith('Graph run completed')) return 'Граф завершил выполнение';
+  if (message.startsWith('Graph stopped before external action execution')) {
+    return 'Граф остановлен перед внешним действием';
+  }
+  if (message.startsWith('Node started:')) return `Узел запущен: ${message.split(':', 2)[1]?.trim() ?? ''}`;
+  if (message.startsWith('Node completed:')) return `Узел завершён: ${message.split(':', 2)[1]?.trim() ?? ''}`;
+  if (message.startsWith('Approval decision: require_approval')) return 'Нужно решение человека';
+  return message;
+}
+
 export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps) {
   const [online, setOnline] = useState<boolean | null>(null);
   const [inputText, setInputText] = useState('Привет, Mia! Спланируй короткий ответ.');
@@ -85,7 +117,7 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
     setEvents(syncedRun.events);
     setReplayCursor(Math.max(0, syncedRun.events.length - 1));
     setActiveNodeId(null);
-    setStatus(`Запуск ${syncedRun.status}: ${syncedRun.run_id}`);
+    setStatus(`Запуск графа: ${runStatusLabel(syncedRun.status)}`);
   }, [syncedRun]);
 
   const stopReplay = useCallback(() => {
@@ -193,7 +225,7 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
       setLastRun(run);
       setEvents(run.events);
       setReplayCursor(Math.max(0, run.events.length - 1));
-      setStatus(`WebSocket: ${run.run_id}`);
+      setStatus('Граф выполняется');
 
       await watchRunEvents(run.run_id, async (event) => {
         const active = applyRunEvent(idMap, event);
@@ -203,7 +235,7 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
       });
 
       setActiveNodeId(null);
-      setStatus(`Запуск ${run.status}: ${run.run_id}`);
+      setStatus(`Запуск графа: ${runStatusLabel(run.status)}`);
       onRunComplete?.(run);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Не удалось запустить граф.';
@@ -332,10 +364,8 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
 
       {lastRun && (
         <div className="miya-run-summary">
-          <strong>Статус:</strong> {lastRun.status} · <strong>провайдер:</strong>{' '}
-          {lastRun.provider || selectedProvider} · <strong>запуск:</strong> {lastRun.run_id}
-          <br />
-          <strong>trace_id:</strong> <code>{lastRun.trace_id}</code>
+          <strong>Статус:</strong> {runStatusLabel(lastRun.status)} · <strong>модель:</strong>{' '}
+          {providerDisplayName(lastRun.provider || selectedProvider)}
         </div>
       )}
 
@@ -433,8 +463,8 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
                         : undefined
                     }
                   >
-                    <code>{event.event_type}</code>
-                    {event.node_id ? ` · ${event.node_id}` : ''} — {event.message}
+                    <code>{eventTypeLabel(event.event_type)}</code>
+                    {event.node_id ? ` · ${event.node_id}` : ''} — {eventMessageLabel(event.message)}
                   </li>
                 ))}
               </ol>

@@ -31,6 +31,16 @@ uv run python scripts/miaos-doctor.py
 
 The doctor checks backend health, provider selection, persona model binding, and AEON status.
 
+## v1.0 Smoke Scenario
+
+After the editor opens:
+
+1. Open **Модели и персона** and confirm the main model/provider is visible.
+2. Open **AEON**, ask a short question, add a goal, and click **Закрепить память**.
+3. Open **Память** and confirm the latest chat episode appears without internal context or trace IDs.
+4. Open **Граф**, load `mia-minimal` from templates if the canvas is empty, select **Тестовый режим**, and run the graph. The expected state is **ожидает подтверждения**.
+5. Open **Качество**, select **Тестовый режим**, and run `golden_mvp`. The expected result is `ПРОЙДЕНО · 3/3`.
+
 If the toolbar says `Backend MiaOS offline`, start the backend from this monorepo path:
 
 ```bash

@@ -23,6 +23,13 @@ function suiteLabel(suite: string): string {
   return suite;
 }
 
+function resultDetailLabel(detail: string): string {
+  if (detail === 'deny') return 'опасное действие заблокировано';
+  if (detail === 'status=waiting_for_approval') return 'граф остановился на подтверждении';
+  if (detail.startsWith('Тестовый режим:')) return detail;
+  return detail;
+}
+
 export function QualityLab() {
   const [datasets, setDatasets] = useState<MiaosQualityDataset[]>([]);
   const [providers, setProviders] = useState<MiaosProviderInfo[]>([]);
@@ -190,7 +197,7 @@ export function QualityLab() {
                       {result.passed ? 'пройден' : 'ошибка'}
                     </span>
                   </td>
-                  <td>{result.detail}</td>
+                  <td>{resultDetailLabel(result.detail)}</td>
                 </tr>
               ))}
             </tbody>

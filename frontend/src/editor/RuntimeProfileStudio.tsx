@@ -20,6 +20,27 @@ function readableList(items: string[], labels: Record<string, string>): string {
   return items.map((item) => labels[item] ?? item).join(', ') || 'нет';
 }
 
+function backgroundCycleLabel(value: string): string {
+  if (value === 'conservative') return 'бережный режим';
+  if (value === 'balanced') return 'сбалансированный режим';
+  if (value === 'aggressive') return 'активный режим';
+  return value;
+}
+
+function autonomyLabel(value: string): string {
+  if (value === 'L3') return 'автономность L3';
+  if (value === 'L4') return 'автономность L4';
+  if (value === 'L5') return 'автономность L5';
+  return `автономность ${value}`;
+}
+
+function modelTierLabel(value: string): string {
+  if (value === 'local_7b') return 'локальная 7B модель';
+  if (value === 'local_14b') return 'локальная 14B модель';
+  if (value === 'local_32b') return 'локальная 32B модель';
+  return value.replaceAll('_', ' ');
+}
+
 export function RuntimeProfileStudio() {
   const [profiles, setProfiles] = useState<MiaosRuntimeProfile[]>([]);
   const [selected, setSelected] = useState<string | null>(() => getSelectedRuntimeProfile());
@@ -101,7 +122,7 @@ export function RuntimeProfileStudio() {
                   {profile.hardware.unified_memory_gb} GB · {profile.hardware.apple_silicon_generation}
                 </span>
                 <span className="miya-runtime-card-meta">
-                  автономность {profile.safety_defaults.autonomy_ceiling} · {profile.background_cycles}
+                  {autonomyLabel(profile.safety_defaults.autonomy_ceiling)} · {backgroundCycleLabel(profile.background_cycles)}
                 </span>
               </button>
             );
@@ -122,7 +143,7 @@ export function RuntimeProfileStudio() {
           <div className="miya-runtime-explain-grid">
             <div>
               <strong>Класс модели</strong>
-              <p>{active.primary_model_tier.replaceAll('_', ' ')}</p>
+              <p>{modelTierLabel(active.primary_model_tier)}</p>
             </div>
             <div>
               <strong>Контекст</strong>

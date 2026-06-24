@@ -2,10 +2,13 @@
 
 from pathlib import Path
 
+import pytest
 from fastapi.testclient import TestClient
 
 from miaos.api import MiaOSApiState, create_app
+from miaos.models import MockModelProvider
 from miaos.quality import load_dataset, run_quality_eval
+from miaos.quality import runner as quality_runner
 from miaos.quality.datasets import GoldenDataset
 
 HTTP_OK = 200
@@ -54,7 +57,10 @@ def test_quality_runner_passes_golden_mvp_with_mock(tmp_path: Path) -> None:
     assert report.pass_rate == 1.0
 
 
-def test_persona_consistency_uses_relaxed_check_for_mlx(tmp_path: Path) -> None:
+def test_persona_consistency_uses_relaxed_check_for_mlx(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     """Non-mock providers only require a non-empty chat response."""
     client = _client(tmp_path)
     _create_mia_persona(client)
@@ -62,6 +68,7 @@ def test_persona_consistency_uses_relaxed_check_for_mlx(tmp_path: Path) -> None:
     persona_case = next(
         case for case in load_dataset("golden_mvp").cases if case.id == "persona-echo"
     )
+    monkeypatch.setattr(quality_runner, "resolve_provider", lambda _name: MockModelProvider())
 
     report = run_quality_eval(
         GoldenDataset(name="persona-smoke", description="smoke", cases=[persona_case]),

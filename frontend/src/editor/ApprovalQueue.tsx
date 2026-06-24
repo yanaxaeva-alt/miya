@@ -104,7 +104,7 @@ export function ApprovalQueue({ lastRun, onRunUpdate }: ApprovalQueueProps) {
 
       {lastRun?.approval_request_id && (
         <p className="miya-approval-latest">
-          Последний запуск создал: <code>{lastRun.approval_request_id}</code>
+          Последний запуск ждёт подтверждения.
         </p>
       )}
 
@@ -131,18 +131,6 @@ export function ApprovalQueue({ lastRun, onRunUpdate }: ApprovalQueueProps) {
                 <div>
                   <dt>узел</dt>
                   <dd>{item.node_id}</dd>
-                </div>
-                <div>
-                  <dt>запуск</dt>
-                  <dd>
-                    <code>{item.run_id}</code>
-                  </dd>
-                </div>
-                <div>
-                  <dt>диагностика</dt>
-                  <dd>
-                    <code>{item.trace_id}</code>
-                  </dd>
                 </div>
               </dl>
               <div className="miya-approval-actions">

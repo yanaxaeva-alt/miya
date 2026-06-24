@@ -89,9 +89,8 @@ class MockModelProvider:
 
     def generate(self, request: InferenceRequest) -> InferenceResponse:
         """Return a deterministic response that proves the provider was invoked."""
-        prefix = f"[{request.model_id}]" if request.model_id else "[mock-model]"
         return InferenceResponse(
-            text=f"{prefix} {request.prompt}",
+            text=f"Тестовый режим: {request.prompt}",
             provider_name=self.name,
             model_id=request.model_id,
             trace_id=request.trace_id,

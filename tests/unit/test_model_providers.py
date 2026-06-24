@@ -31,7 +31,7 @@ def test_mock_provider_generates_deterministic_response() -> None:
     assert response.provider_name == "mock"
     assert response.model_id == "mock-small"
     assert response.trace_id == "trace-1"
-    assert response.text == "[mock-small] hello"
+    assert response.text == "Тестовый режим: hello"
     assert response.metadata["deterministic"] is True
 
 
