@@ -16,7 +16,7 @@ import { applyEventsUpTo, replayGraphEvents } from './runReplay';
 import { extractMiaAnswer, extractMiaQuestion } from './runOutput';
 import {
   DEFAULT_PROVIDER,
-  isMlxAvailable,
+  isLocalModelProviderAvailable,
   pickDefaultProvider,
   providerDescription,
   providerDisplayName,
@@ -307,9 +307,9 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
             </select>
           </label>
 
-          {providers.length > 0 && !isMlxAvailable(providers) && (
+          {providers.length > 0 && !isLocalModelProviderAvailable(providers) && (
             <p className="miya-run-provider-hint">
-              MLX недоступен. Перезапустите backend:{' '}
+              Прямой MLX недоступен. Если он нужен, перезапустите backend:{' '}
               <code>MIYA_WITH_MLX=1 ~/Documents/miya/frontend/scripts/start-miaos-backend.sh</code>
             </p>
           )}

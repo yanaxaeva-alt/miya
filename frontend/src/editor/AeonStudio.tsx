@@ -15,7 +15,7 @@ import {
 } from './miaosApi';
 import {
   DEFAULT_PROVIDER,
-  isMlxAvailable,
+  isLocalModelProviderAvailable,
   pickDefaultProvider,
   providerDisplayName,
 } from './providerPrefs';
@@ -54,6 +54,20 @@ function readableAeonText(text: string): string {
     if (visible && !visible.startsWith('morning_consolidation:')) return visible;
   }
   return 'Сейчас запрос проходит проверку правил, получает контекст целей и памяти и передается в исполнительный слой.';
+}
+
+function surpriseLabel(surprise: string): string {
+  if (surprise === 'low') return 'низкая неожиданность';
+  if (surprise === 'medium') return 'средняя неожиданность';
+  if (surprise === 'high') return 'высокая неожиданность';
+  return surprise;
+}
+
+function tickActionLabel(action: string): string {
+  if (action === 'routine_monitor') return 'наблюдение';
+  if (action === 'local_plan') return 'локальный план';
+  if (action === 'escalate_to_governance') return 'проверка правил';
+  return action;
 }
 
 export function AeonStudio({ onTraceId }: AeonStudioProps) {
@@ -111,7 +125,7 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
         {
           id: `tick-${tick.tick_id}`,
           role: 'system',
-          text: `Heartbeat: surprise=${tick.surprise} (${tick.surprise_score.toFixed(2)}), action=${tick.action}`,
+          text: `Цикл обновлён: ${surpriseLabel(tick.surprise)}, оценка ${tick.surprise_score.toFixed(2)}, действие — ${tickActionLabel(tick.action)}.`,
         },
       ]);
       await refreshStatus();
@@ -304,7 +318,7 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
               className={`miya-chat-msg miya-chat-msg-${message.role}${message.blocked ? ' miya-chat-msg-blocked' : ''}`}
             >
               <span className="miya-chat-msg-label">
-                {message.role === 'user' ? 'Вы' : message.role === 'system' ? 'AEON system' : 'AEON'}
+                {message.role === 'user' ? 'Вы' : 'AEON'}
               </span>
               <p className="miya-chat-msg-text">{readableAeonText(message.text)}</p>
             </li>
@@ -362,7 +376,7 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
                   <ul className="miya-aeon-goals">
                     {status.recent_ticks.map((tick) => (
                       <li key={tick.tick_id}>
-                        {tick.tick_id} · {tick.surprise} · {tick.action}
+                        {tick.tick_id} · {surpriseLabel(tick.surprise)} · {tickActionLabel(tick.action)}
                       </li>
                     ))}
                   </ul>
@@ -507,9 +521,9 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
             </button>
           </div>
 
-          {providers.length > 0 && !isMlxAvailable(providers) && (
+          {providers.length > 0 && !isLocalModelProviderAvailable(providers) && (
             <p className="miya-run-hint">
-              Для локальной генерации перезапустите backend:{' '}
+              Для прямого MLX перезапустите backend:{' '}
               <code>MIYA_WITH_MLX=1 ~/Documents/miya/frontend/scripts/start-miaos-backend.sh</code>
             </p>
           )}

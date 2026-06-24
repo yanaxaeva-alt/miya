@@ -46,14 +46,16 @@ The backend can use a local MLX model as the default provider:
 
 ```bash
 cd ~/Documents/miya/frontend
-MIYA_PROVIDER=mlx MIYA_MLX_MODEL="/absolute/path/to/mlx-model" ./scripts/start-miaos-backend.sh
+MIYA_WITH_MLX=1 MIYA_PROVIDER=mlx MIYA_MLX_MODEL="/absolute/path/to/mlx-model" ./scripts/start-miaos-backend.sh
 ```
 
 `MIYA_MLX_MODEL` can be an absolute local model directory or a HuggingFace/MLX repo id, for example:
 
 ```bash
-MIYA_PROVIDER=mlx MIYA_MLX_MODEL="mlx-community/Qwen2.5-7B-Instruct-4bit" ./scripts/start-miaos-backend.sh
+MIYA_WITH_MLX=1 MIYA_PROVIDER=mlx MIYA_MLX_MODEL="mlx-community/Qwen2.5-7B-Instruct-4bit" ./scripts/start-miaos-backend.sh
 ```
+
+Plain `./scripts/start-miaos-backend.sh` skips direct MLX dependencies so the API starts quickly. Use `MIYA_WITH_MLX=1` only when you specifically want the built-in `mlx-lm` provider.
 
 ## oMLX Server Provider
 

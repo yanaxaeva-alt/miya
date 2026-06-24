@@ -19,6 +19,12 @@ export function isMlxAvailable(providers: MiaosProviderInfo[]): boolean {
   return providers.some((item) => item.name === 'mlx' && item.available);
 }
 
+export function isLocalModelProviderAvailable(providers: MiaosProviderInfo[]): boolean {
+  return providers.some(
+    (item) => (item.name === 'omlx' || item.name === 'mlx') && item.available,
+  );
+}
+
 export function providerDisplayName(providerName: string): string {
   if (providerName === 'omlx') return 'oMLX локально';
   if (providerName === 'mlx') return 'MLX напрямую';

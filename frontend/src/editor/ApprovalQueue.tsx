@@ -19,6 +19,14 @@ function formatTs(ts: string) {
   }
 }
 
+function actionClassLabel(actionClass: string): string {
+  if (actionClass === 'publish') return 'Публикация';
+  if (actionClass === 'send_message') return 'Отправка сообщения';
+  if (actionClass === 'delete') return 'Удаление';
+  if (actionClass === 'write_outside_sandbox') return 'Запись вне песочницы';
+  return actionClass;
+}
+
 export function ApprovalQueue({ lastRun, onRunUpdate }: ApprovalQueueProps) {
   const [items, setItems] = useState<MiaosApprovalRequest[]>([]);
   const [loading, setLoading] = useState(false);
@@ -77,8 +85,8 @@ export function ApprovalQueue({ lastRun, onRunUpdate }: ApprovalQueueProps) {
   return (
     <section id="miya-approval-queue" className="miya-approval-queue">
       <div className="miya-run-header">
-        <h2 className="miya-run-title">Approval Queue</h2>
-        <span className="miya-run-badge">{items.length} pending</span>
+        <h2 className="miya-run-title">Очередь подтверждений</h2>
+        <span className="miya-run-badge">{items.length} ожидают решения</span>
         <button
           type="button"
           className="miya-btn miya-btn-secondary"
@@ -90,9 +98,8 @@ export function ApprovalQueue({ lastRun, onRunUpdate }: ApprovalQueueProps) {
       </div>
 
       <p className="miya-run-hint">
-        Запросы появляются, когда граф останавливается на узле <code>approval</code> со статусом{' '}
-        <code>waiting_for_approval</code>. Решение человека пишется в audit log (
-        <code>human_approval</code>. После <strong>Одобрить</strong> граф продолжается до Финиша.
+        Здесь появляются действия, которым нужно решение человека. После кнопки
+        <strong> Одобрить</strong> граф продолжит выполнение, после отклонения остановится.
       </p>
 
       {lastRun?.approval_request_id && (
@@ -106,7 +113,7 @@ export function ApprovalQueue({ lastRun, onRunUpdate }: ApprovalQueueProps) {
 
       {!loading && items.length === 0 && (
         <p className="miya-run-hint">
-          Очередь пуста. Соберите граф Старт → агент → approval → Финиш и нажмите{' '}
+          Очередь пуста. Соберите граф Старт → агент → согласование → Финиш и нажмите{' '}
           <strong>Запустить</strong>.
         </p>
       )}
@@ -116,23 +123,23 @@ export function ApprovalQueue({ lastRun, onRunUpdate }: ApprovalQueueProps) {
           {items.map((item) => (
             <li key={item.request_id} className="miya-approval-card">
               <div className="miya-approval-card-head">
-                <strong>{item.action_class}</strong>
+                <strong>{actionClassLabel(item.action_class)}</strong>
                 <span>{formatTs(item.created_at)}</span>
               </div>
               <p className="miya-approval-summary">{item.summary}</p>
               <dl className="miya-approval-meta">
                 <div>
-                  <dt>node</dt>
+                  <dt>узел</dt>
                   <dd>{item.node_id}</dd>
                 </div>
                 <div>
-                  <dt>run_id</dt>
+                  <dt>запуск</dt>
                   <dd>
                     <code>{item.run_id}</code>
                   </dd>
                 </div>
                 <div>
-                  <dt>trace_id</dt>
+                  <dt>диагностика</dt>
                   <dd>
                     <code>{item.trace_id}</code>
                   </dd>

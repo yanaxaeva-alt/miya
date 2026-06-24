@@ -139,7 +139,7 @@ export function MiaScenario({ graph, lastRun, onModelsChange, compact = false }:
           Сквозной сценарий v1.0: профиль компьютера, шаблоны, модели, персона,
           граф, библиотека, чат, запуск и подтверждение.
           Провайдер: <strong>{status?.provider ?? '…'}</strong>
-          {status?.mlxAvailable ? ' (MLX)' : ' (mock)'}.
+          {status?.localModelAvailable ? ' (локальная модель)' : ' (тестовый режим)'}.
         </p>
       )}
 

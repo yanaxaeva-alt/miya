@@ -2,6 +2,21 @@ import type { Node } from '@antv/x6';
 import { register } from '@antv/x6-react-shape';
 import { useNodeData } from './useNodeData';
 
+function actionClassLabel(actionClass: string): string {
+  if (actionClass === 'publish') return 'публикация';
+  if (actionClass === 'send_message') return 'сообщение';
+  if (actionClass === 'delete') return 'удаление';
+  if (actionClass === 'write_outside_sandbox') return 'запись вне песочницы';
+  return actionClass;
+}
+
+function statusLabel(status: string): string {
+  if (status === 'running') return 'в работе';
+  if (status === 'success') return 'готово';
+  if (status === 'error') return 'ошибка';
+  return status;
+}
+
 function ApprovalView({ node }: { node: Node }) {
   const data = useNodeData(node);
   const actionClass = (data.action_class as string | undefined) || 'publish';
@@ -27,7 +42,7 @@ function ApprovalView({ node }: { node: Node }) {
         {(data.name as string) || 'Согласование'}
       </div>
       <div style={{ fontSize: 11, color: 'var(--warning-accent)', marginTop: 4 }}>
-        action: {actionClass}
+        действие: {actionClassLabel(actionClass)}
       </div>
       {status !== 'idle' && (
         <div
@@ -37,7 +52,7 @@ function ApprovalView({ node }: { node: Node }) {
             marginTop: 4,
           }}
         >
-          ● {status}
+          ● {statusLabel(status)}
         </div>
       )}
     </div>

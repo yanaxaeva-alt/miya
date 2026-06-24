@@ -1,6 +1,30 @@
 import { useCallback, useEffect, useState } from 'react';
 import { fetchTools, type MiaosToolSpec } from './miaosApi';
 
+function toolNameLabel(name: string): string {
+  if (name === 'web_search_mock') return 'Поиск в интернете';
+  if (name === 'create_draft') return 'Черновик ответа';
+  if (name === 'read_file_sandbox') return 'Чтение файла';
+  if (name === 'write_file_sandbox') return 'Запись файла';
+  return name;
+}
+
+function toolDescription(tool: MiaosToolSpec): string {
+  if (tool.name === 'web_search_mock') return 'Тестовый поиск для сценариев без доступа к внешним сервисам.';
+  if (tool.name === 'create_draft') return 'Создаёт черновик текста внутри графа.';
+  if (tool.name === 'read_file_sandbox') return 'Читает файл только в разрешённой области.';
+  if (tool.name === 'write_file_sandbox') return 'Записывает файл только в разрешённой области.';
+  return tool.description;
+}
+
+function actionClassLabel(actionClass: string): string {
+  if (actionClass === 'read') return 'чтение';
+  if (actionClass === 'write') return 'запись';
+  if (actionClass === 'publish') return 'публикация';
+  if (actionClass === 'send_message') return 'сообщение';
+  return actionClass;
+}
+
 export function ToolRegistry() {
   const [tools, setTools] = useState<MiaosToolSpec[]>([]);
   const [loading, setLoading] = useState(false);
@@ -47,7 +71,7 @@ export function ToolRegistry() {
 
       <p className="miya-run-hint">
         Каталог инструментов, которые можно вызывать из графа. Они проходят проверку безопасности
-        и выполняются только в sandbox-режиме.
+        и выполняются только в изолированном режиме.
       </p>
 
       {error && <pre className="miya-run-error">{error}</pre>}
@@ -73,12 +97,10 @@ export function ToolRegistry() {
               {tools.map((tool) => (
                 <tr key={tool.name}>
                   <td>
-                    <strong>{tool.name}</strong>
-                    <div className="miya-model-id">{tool.description}</div>
+                    <strong>{toolNameLabel(tool.name)}</strong>
+                    <div className="miya-model-id">{toolDescription(tool)}</div>
                   </td>
-                  <td>
-                    <code>{tool.action_class}</code>
-                  </td>
+                  <td>{actionClassLabel(tool.action_class)}</td>
                   <td>{tool.sandbox_only ? 'да' : 'нет'}</td>
                   <td>
                     <span

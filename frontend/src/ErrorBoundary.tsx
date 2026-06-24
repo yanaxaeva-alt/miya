@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<Props, State> {
         >
           <h2 style={{ marginTop: 0 }}>Ошибка в редакторе</h2>
           <pre style={{ whiteSpace: 'pre-wrap', fontSize: 13 }}>{this.state.error.message}</pre>
-          <p>Откройте Safari → Разработка → Показать Web Inspector → вкладка Console.</p>
+          <p>Откройте Safari → Разработка → Показать веб-инспектор → вкладка «Консоль».</p>
         </div>
       );
     }

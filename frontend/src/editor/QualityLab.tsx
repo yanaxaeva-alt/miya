@@ -7,7 +7,21 @@ import {
   type MiaosProviderInfo,
   type MiaosQualityDataset,
 } from './miaosApi';
-import { DEFAULT_PROVIDER, pickDefaultProvider } from './providerPrefs';
+import { DEFAULT_PROVIDER, pickDefaultProvider, providerDisplayName } from './providerPrefs';
+
+function datasetDescription(dataset: MiaosQualityDataset): string {
+  if (dataset.name === 'golden_mvp') {
+    return 'Базовый набор: проверяет стабильность персоны, границы безопасности и регрессии графов.';
+  }
+  return dataset.description;
+}
+
+function suiteLabel(suite: string): string {
+  if (suite === 'persona_consistency') return 'персона';
+  if (suite === 'safety_boundary') return 'безопасность';
+  if (suite === 'graph_regression') return 'графы';
+  return suite;
+}
 
 export function QualityLab() {
   const [datasets, setDatasets] = useState<MiaosQualityDataset[]>([]);
@@ -39,7 +53,7 @@ export function QualityLab() {
       });
     } catch (err) {
       setDatasets([]);
-      setError(err instanceof Error ? err.message : 'Не удалось загрузить Quality Lab');
+      setError(err instanceof Error ? err.message : 'Не удалось загрузить проверки качества');
     } finally {
       setLoading(false);
     }
@@ -57,7 +71,7 @@ export function QualityLab() {
       const result = await runQualityEval(selectedDataset, selectedProvider, 'mia');
       setReport(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось запустить eval');
+      setError(err instanceof Error ? err.message : 'Не удалось запустить проверку');
     } finally {
       setRunning(false);
     }
@@ -68,8 +82,8 @@ export function QualityLab() {
   return (
     <section id="miya-quality-lab" className="miya-quality-lab">
       <div className="miya-run-header">
-        <h2 className="miya-run-title">Quality Lab</h2>
-        <span className="miya-run-badge">{activeDataset?.case_count ?? 0} cases</span>
+        <h2 className="miya-run-title">Проверка качества</h2>
+        <span className="miya-run-badge">{activeDataset?.case_count ?? 0} кейсов</span>
         <button
           type="button"
           className="miya-btn miya-btn-secondary"
@@ -84,27 +98,25 @@ export function QualityLab() {
           onClick={() => void runEval()}
           disabled={running || datasets.length === 0}
         >
-          {running ? 'Прогон…' : 'Запустить eval'}
+          {running ? 'Проверка…' : 'Запустить проверку'}
         </button>
       </div>
 
       <p className="miya-run-hint">
-        Golden dataset evals через <code>POST /quality/eval</code>: persona consistency, safety
-        boundary, graph regression. Для chat-кейсов нужен persona package <code>mia</code>.{' '}
-        <strong>mock</strong> — строгий echo-тест; <strong>mlx</strong> — smoke-тест (непустой
-        ответ модели).
+        Быстрая проверка, что Mia отвечает стабильно, соблюдает границы безопасности и не ломает
+        базовые графы. Для локальной модели проверяем, что ответ пришёл и сценарий завершился.
       </p>
 
       {selectedProvider !== 'mock' && (
         <p className="miya-run-hint">
-          Провайдер <strong>{selectedProvider}</strong>: кейс <code>persona-echo</code> проверяет
-          только что chat pipeline вернул текст, без точного совпадения с mock-echo.
+          Провайдер <strong>{providerDisplayName(selectedProvider)}</strong>: проверка не сравнивает
+          текст дословно, а убеждается, что локальная модель вернула осмысленный ответ.
         </p>
       )}
 
       <div className="miya-chat-controls">
         <label className="miya-field">
-          <span>Dataset</span>
+          <span>Набор проверок</span>
           <select
             value={selectedDataset}
             onChange={(e) => setSelectedDataset(e.target.value)}
@@ -126,7 +138,7 @@ export function QualityLab() {
           >
             {providers.map((provider) => (
               <option key={provider.name} value={provider.name} disabled={!provider.available}>
-                {provider.name}
+                {providerDisplayName(provider.name)}
                 {!provider.available ? ' (недоступен)' : ''}
               </option>
             ))}
@@ -136,8 +148,8 @@ export function QualityLab() {
 
       {activeDataset && (
         <p className="miya-run-hint">
-          {activeDataset.description} · порог {Math.round(activeDataset.min_pass_rate * 100)}% · suites:{' '}
-          {activeDataset.suites.join(', ')}
+          {datasetDescription(activeDataset)} · порог {Math.round(activeDataset.min_pass_rate * 100)}% · группы:{' '}
+          {activeDataset.suites.map(suiteLabel).join(', ')}
         </p>
       )}
 
@@ -145,8 +157,9 @@ export function QualityLab() {
 
       {report && (
         <div className={`miya-quality-summary ${report.gate_passed ? 'miya-quality-pass' : 'miya-quality-fail'}`}>
-          <strong>{report.gate_passed ? 'PASS' : 'FAIL'}</strong> · {report.passed}/{report.passed + report.failed}{' '}
-          passed · {Math.round(report.pass_rate * 100)}% (min {Math.round(report.min_pass_rate * 100)}%)
+          <strong>{report.gate_passed ? 'ПРОЙДЕНО' : 'ЕСТЬ ПРОБЛЕМЫ'}</strong> · {report.passed}/
+          {report.passed + report.failed} пройдено · {Math.round(report.pass_rate * 100)}% (минимум{' '}
+          {Math.round(report.min_pass_rate * 100)}%)
         </div>
       )}
 
@@ -155,10 +168,10 @@ export function QualityLab() {
           <table className="miya-model-table">
             <thead>
               <tr>
-                <th>Case</th>
-                <th>Suite</th>
+                <th>Кейс</th>
+                <th>Группа</th>
                 <th>Исход</th>
-                <th>Detail</th>
+                <th>Детали</th>
               </tr>
             </thead>
             <tbody>
@@ -167,14 +180,14 @@ export function QualityLab() {
                   <td>
                     <code>{result.case_id}</code>
                   </td>
-                  <td>{result.suite}</td>
+                  <td>{suiteLabel(result.suite)}</td>
                   <td>
                     <span
                       className={`miya-model-status ${
                         result.passed ? 'miya-model-status-active' : 'miya-model-status-archived'
                       }`}
                     >
-                      {result.passed ? 'pass' : 'fail'}
+                      {result.passed ? 'пройден' : 'ошибка'}
                     </span>
                   </td>
                   <td>{result.detail}</td>

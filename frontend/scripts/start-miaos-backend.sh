@@ -18,9 +18,11 @@ fi
 cd "$MIYA_DIR"
 echo "→ uv sync (Documents/miya)"
 uv sync
-if [[ "${MIYA_WITH_MLX:-1}" == "1" ]]; then
+if [[ "${MIYA_WITH_MLX:-0}" == "1" ]]; then
   echo "→ uv sync --group mlx (Apple Silicon inference)"
   uv sync --group mlx
+else
+  echo "→ MLX optional dependencies skipped (set MIYA_WITH_MLX=1 to install/use direct MLX)"
 fi
 
 PORT="${MIYA_PORT:-8000}"

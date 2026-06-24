@@ -87,7 +87,7 @@ export default function App() {
     let alive = true;
     const refreshBackendStatus = async () => {
       const ok = await checkMiaosHealth();
-      if (alive) setStatus(ok ? 'Backend MiaOS online' : 'Backend MiaOS offline');
+      if (alive) setStatus(ok ? 'MiaOS доступен' : 'MiaOS недоступен');
     };
     void refreshBackendStatus();
     const timer = window.setInterval(() => void refreshBackendStatus(), 15000);
@@ -306,13 +306,13 @@ export default function App() {
             <div className="miya-tab-stack">
             <TabIntro
               title="Качество"
-              body="Диагностика и проверка качества. Основной блок — лаборатория качества; инструменты и trace доступны ниже."
+              body="Диагностика и проверка качества. Основной блок — проверка качества; инструменты и детали выполнения доступны ниже."
             />
             <QualityLab />
             <AdvancedSection title="Инструменты">
               <ToolRegistry />
             </AdvancedSection>
-            <AdvancedSection title="Диагностика trace">{traceViewer}</AdvancedSection>
+            <AdvancedSection title="Детали выполнения">{traceViewer}</AdvancedSection>
             </div>
           )}
         </Suspense>

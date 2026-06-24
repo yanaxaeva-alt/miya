@@ -9,7 +9,7 @@ import {
 } from './miaosApi';
 import {
   DEFAULT_PROVIDER,
-  isMlxAvailable,
+  isLocalModelProviderAvailable,
   pickDefaultProvider,
   providerDisplayName,
 } from './providerPrefs';
@@ -178,9 +178,9 @@ export function ChatStudio({ onTraceId }: ChatStudioProps) {
         </label>
       </div>
 
-      {providers.length > 0 && !isMlxAvailable(providers) && (
+      {providers.length > 0 && !isLocalModelProviderAvailable(providers) && (
         <p className="miya-run-hint">
-          Для локальной генерации на Apple Silicon перезапустите backend:{' '}
+          Для прямого MLX на Apple Silicon перезапустите backend:{' '}
           <code>MIYA_WITH_MLX=1 ~/Documents/miya/frontend/scripts/start-miaos-backend.sh</code>
         </p>
       )}

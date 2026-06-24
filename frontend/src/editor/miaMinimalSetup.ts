@@ -19,11 +19,11 @@ import {
 import { buildMiaProfile, DEMO_MODELS, MIA_GRAPH_FILENAME } from './demoAssets';
 import { importMiaosToCanvas } from './miaosImport';
 import { getSelectedRuntimeProfile } from './editorPrefs';
-import { isMlxAvailable, pickDefaultProvider } from './providerPrefs';
+import { isLocalModelProviderAvailable, pickDefaultProvider } from './providerPrefs';
 
 export interface MiaScenarioStatus {
   online: boolean;
-  mlxAvailable: boolean;
+  localModelAvailable: boolean;
   provider: string;
   runtimeProfileSelected: boolean;
   templateRegistryReady: boolean;
@@ -94,7 +94,7 @@ export async function fetchMiaScenarioStatus(
 
   return {
     online,
-    mlxAvailable: isMlxAvailable(providers),
+    localModelAvailable: isLocalModelProviderAvailable(providers),
     provider,
     runtimeProfileSelected: Boolean(getSelectedRuntimeProfile()),
     templateRegistryReady,

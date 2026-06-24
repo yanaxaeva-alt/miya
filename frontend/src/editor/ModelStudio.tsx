@@ -23,12 +23,12 @@ interface ModelStudioProps {
 
 const LAB_CERT_OPTIONS: Array<{ value: MiaosLabCertStatus | ''; label: string }> = [
   { value: '', label: '—' },
-  { value: 'pending', label: 'pending' },
-  { value: 'passed', label: 'passed' },
-  { value: 'certified', label: 'certified' },
-  { value: 'conditional', label: 'conditional' },
-  { value: 'failed', label: 'failed' },
-  { value: 'rejected', label: 'rejected' },
+  { value: 'pending', label: 'ожидает проверки' },
+  { value: 'passed', label: 'прошла' },
+  { value: 'certified', label: 'сертифицирована' },
+  { value: 'conditional', label: 'условно' },
+  { value: 'failed', label: 'не прошла' },
+  { value: 'rejected', label: 'отклонена' },
 ];
 
 const POOL_ROLES = ['router', 'worker', 'moe_expert', 'deep'] as const;
@@ -43,10 +43,18 @@ function modelLabel(record: MiaosModelRecord): string {
 
 function warningSummary(report: MiaosModelCompatibilityReport | undefined): string {
   if (!report) return '—';
-  if (report.recommended) return 'recommended';
-  if (report.warnings.length === 0) return 'ok';
+  if (report.recommended) return 'рекомендуется';
+  if (report.warnings.length === 0) return 'подходит';
   const top = report.warnings.find((warning) => warning.severity === 'error') ?? report.warnings[0];
   return top.code;
+}
+
+function poolRoleLabel(role: string): string {
+  if (role === 'router') return 'маршрутизатор';
+  if (role === 'worker') return 'исполнитель';
+  if (role === 'moe_expert') return 'эксперт';
+  if (role === 'deep') return 'глубокая задача';
+  return role;
 }
 
 function warningClass(report: MiaosModelCompatibilityReport | undefined): string {
@@ -365,7 +373,7 @@ export function ModelStudio({ models, onModelsChange }: ModelStudioProps) {
               >
                 {POOL_ROLES.map((role) => (
                   <option key={role} value={role}>
-                    {role}
+                    {poolRoleLabel(role)}
                   </option>
                 ))}
               </select>
@@ -423,7 +431,7 @@ export function ModelStudio({ models, onModelsChange }: ModelStudioProps) {
                         <td>{model.quant}</td>
                         <td>{model.context_len.toLocaleString()}</td>
                         <td>{formatSizeGb(model.size_bytes)}</td>
-                        <td>{model.pool_role || '—'}</td>
+                        <td>{model.pool_role ? poolRoleLabel(model.pool_role) : '—'}</td>
                         <td>
                           <span className={`miya-compat-badge ${warningClass(report)}`}>
                             {warningSummary(report)}
