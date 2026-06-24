@@ -185,9 +185,9 @@ export function AgentInspector({
   if (!nodeId || !shape) {
     return (
       <aside className="miya-inspector">
-        <h2 className="miya-inspector-title">Inspector</h2>
+        <h2 className="miya-inspector-title">Настройки узла</h2>
         <p className="miya-inspector-hint">
-          Выберите узел на холсте — agent, tool или approval — или смотрите MiaOS JSON ниже.
+          Выберите узел на холсте или проверьте MiaOS JSON ниже.
         </p>
         <GraphJsonPanel graph={graph} />
       </aside>
@@ -197,7 +197,7 @@ export function AgentInspector({
   if (shape === 'io-node' && ioForm) {
     return (
       <aside className="miya-inspector">
-        <h2 className="miya-inspector-title">Inspector</h2>
+        <h2 className="miya-inspector-title">Настройки узла</h2>
         <p className="miya-inspector-id">
           {nodeShapeLabel(shape)} · {nodeId}
         </p>
@@ -212,13 +212,13 @@ export function AgentInspector({
         </label>
 
         <label className="miya-field">
-          <span>type</span>
+          <span>Тип</span>
           <select
             value={ioForm.node_type ?? 'input'}
             onChange={(e) => patchIo({ node_type: e.target.value as IONodeData['node_type'] })}
           >
-            <option value="input">input / START</option>
-            <option value="output">output / END</option>
+            <option value="input">Вход / START</option>
+            <option value="output">Выход / END</option>
           </select>
         </label>
 
@@ -230,7 +230,7 @@ export function AgentInspector({
   if (shape === 'tool-node' && toolForm) {
     return (
       <aside className="miya-inspector">
-        <h2 className="miya-inspector-title">Inspector</h2>
+        <h2 className="miya-inspector-title">Настройки узла</h2>
         <p className="miya-inspector-id">
           {nodeShapeLabel(shape)} · {nodeId}
         </p>
@@ -245,7 +245,7 @@ export function AgentInspector({
         </label>
 
         <label className="miya-field">
-          <span>tool_name</span>
+          <span>Инструмент</span>
           <select
             value={toolForm.tool_name ?? 'web_search_mock'}
             onChange={(e) => patchTool({ tool_name: e.target.value })}
@@ -266,7 +266,7 @@ export function AgentInspector({
   if (shape === 'approval-node' && approvalForm) {
     return (
       <aside className="miya-inspector">
-        <h2 className="miya-inspector-title">Inspector</h2>
+        <h2 className="miya-inspector-title">Настройки узла</h2>
         <p className="miya-inspector-id">
           {nodeShapeLabel(shape)} · {nodeId}
         </p>
@@ -281,7 +281,7 @@ export function AgentInspector({
         </label>
 
         <label className="miya-field">
-          <span>action_class</span>
+          <span>Класс действия</span>
           <select
             value={approvalForm.action_class ?? 'publish'}
             onChange={(e) => patchApproval({ action_class: e.target.value })}
@@ -317,7 +317,7 @@ export function AgentInspector({
 
   return (
     <aside className="miya-inspector">
-      <h2 className="miya-inspector-title">Inspector</h2>
+      <h2 className="miya-inspector-title">Настройки узла</h2>
       <p className="miya-inspector-id">
         {nodeShapeLabel(shape)} · {nodeId}
       </p>

@@ -6,12 +6,12 @@ import { setStatus } from './miyaBridge';
 type AppTab = 'overview' | 'aeon' | 'graph' | 'memory' | 'models' | 'quality';
 
 const TABS: Array<{ id: AppTab; label: string; description: string }> = [
-  { id: 'overview', label: 'Overview', description: 'первый запуск и быстрые переходы' },
-  { id: 'aeon', label: 'AEON', description: 'ask, goals, heartbeat, acceptance' },
-  { id: 'graph', label: 'Graph Builder', description: 'холст, запуск, templates' },
-  { id: 'memory', label: 'Memory', description: 'память и чат' },
-  { id: 'models', label: 'Models & Persona', description: 'профиль железа, модели, persona' },
-  { id: 'quality', label: 'Quality & Tools', description: 'tools, evals, traces' },
+  { id: 'overview', label: 'Главная', description: 'первый запуск и быстрые переходы' },
+  { id: 'aeon', label: 'AEON', description: 'вопросы, цели и закрепление памяти' },
+  { id: 'graph', label: 'Граф', description: 'холст, шаблоны и запуск' },
+  { id: 'memory', label: 'Память', description: 'чат, эпизоды и заметки' },
+  { id: 'models', label: 'Модели и персона', description: 'профиль, модель и Mia' },
+  { id: 'quality', label: 'Качество', description: 'проверки, инструменты и диагностика' },
 ];
 
 const SimpleGraph = lazy(() => import('./editor/SimpleGraph').then((module) => ({ default: module.SimpleGraph })));
@@ -169,26 +169,26 @@ export default function App() {
             <div className="miya-tab-stack">
               <TabIntro
                 title="Главная"
-                body="Выберите, что хотите сделать сейчас. Подробный checklist спрятан ниже, чтобы не мешать работе."
+                body="Выберите, что хотите сделать сейчас. Подробный чеклист спрятан ниже, чтобы не мешать работе."
               />
               <section className="miya-start-cards" aria-label="Основные действия">
                 <button type="button" className="miya-start-card miya-start-card-primary" onClick={() => setActiveTab('aeon')}>
                   <span>1</span>
                   <strong>Работать с AEON</strong>
-                  <em>Спросить Мию, добавить цель, выполнить consolidation.</em>
+                  <em>Спросить Мию, добавить цель, закрепить важное в памяти.</em>
                 </button>
                 <button type="button" className="miya-start-card" onClick={() => setActiveTab('graph')}>
                   <span>2</span>
-                  <strong>Собрать graph</strong>
-                  <em>Открыть холст, шаблоны и Run Console.</em>
+                  <strong>Собрать граф</strong>
+                  <em>Открыть холст, выбрать шаблон и запустить сценарий.</em>
                 </button>
                 <button type="button" className="miya-start-card" onClick={() => setActiveTab('models')}>
                   <span>3</span>
                   <strong>Проверить настройки</strong>
-                  <em>Runtime profile, модели и persona package.</em>
+                  <em>Профиль компьютера, основная модель и персона Mia.</em>
                 </button>
               </section>
-              <AdvancedSection title="Setup checklist">
+              <AdvancedSection title="Чеклист запуска">
                 <WelcomePanel />
               </AdvancedSection>
             </div>
@@ -197,8 +197,8 @@ export default function App() {
           {activeTab === 'aeon' && (
             <div className="miya-tab-stack">
             <TabIntro
-              title="AEON"
-              body="Основной сценарий: спросить Мию, добавить цель, выполнить consolidation. Остальное спрятано справа как контроль и аудит."
+                title="AEON"
+                body="Основной сценарий: спросить Мию, добавить цель и закрепить важное в памяти. Контроль и диагностика спрятаны справа."
               actions={
                 <>
                   <button
@@ -213,7 +213,7 @@ export default function App() {
                     className="miya-btn"
                     onClick={() => document.getElementById('miya-scenario')?.scrollIntoView({ behavior: 'smooth' })}
                   >
-                    Checklist
+                    Чеклист
                   </button>
                 </>
               }
@@ -224,8 +224,8 @@ export default function App() {
               </div>
               <aside className="miya-workspace-side">
                 <MiaScenario graph={graph} lastRun={lastRun} onModelsChange={setRegisteredModels} compact />
-                <AdvancedSection title="Approval Queue">{approvalQueue}</AdvancedSection>
-                <AdvancedSection title="Trace Viewer">{traceViewer}</AdvancedSection>
+                <AdvancedSection title="Очередь подтверждений">{approvalQueue}</AdvancedSection>
+                <AdvancedSection title="Диагностика trace">{traceViewer}</AdvancedSection>
               </aside>
             </div>
             </div>
@@ -234,8 +234,8 @@ export default function App() {
           {activeTab === 'graph' && (
             <div className="miya-tab-stack">
             <TabIntro
-              title="Graph Builder"
-              body="Одна зона для визуального графа: соберите узлы на холсте, затем запустите через Run Console. Templates и Library спрятаны ниже."
+              title="Граф"
+              body="Одна зона для визуального сценария: соберите узлы на холсте, затем запустите проверку. Шаблоны и библиотека спрятаны ниже."
               actions={
                 <>
                   <button
@@ -257,7 +257,7 @@ export default function App() {
             />
             <SimpleGraph onGraphReady={setGraph} registeredModels={registeredModels} lastRun={lastRun} />
             {runConsole}
-            <AdvancedSection title="Templates and Library">
+            <AdvancedSection title="Шаблоны и библиотека">
               <div className="miya-workspace-grid">
                 <TemplateRegistry graph={graph} />
                 <GraphLibrary graph={graph} />
@@ -269,7 +269,7 @@ export default function App() {
           {activeTab === 'memory' && (
             <div className="miya-tab-stack">
             <TabIntro
-              title="Memory"
+              title="Память"
               body="Сначала обычный чат, затем просмотр эпизодов и заметок памяти. Так проще проверить, что Мия запоминает."
               actions={
                 <button
@@ -282,7 +282,7 @@ export default function App() {
               }
             />
             <ChatStudio onTraceId={setLastTraceId} />
-            <AdvancedSection title="Memory Store">
+            <AdvancedSection title="Хранилище памяти">
               <MemoryStudio />
             </AdvancedSection>
             </div>
@@ -291,12 +291,12 @@ export default function App() {
           {activeTab === 'models' && (
             <div className="miya-tab-stack">
             <TabIntro
-              title="Models & Persona"
-              body="Настройка окружения: выберите профиль железа, проверьте модели и persona Mia. Обычно это делается один раз."
+              title="Модели и персона"
+              body="Настройка окружения: выберите профиль компьютера, проверьте основную модель и персону Mia. Обычно это делается один раз."
             />
             <RuntimeProfileStudio />
             <ModelStudio models={registeredModels} onModelsChange={setRegisteredModels} />
-            <AdvancedSection title="Persona Package">
+            <AdvancedSection title="Персона Mia">
               <PersonaStudio />
             </AdvancedSection>
             </div>
@@ -305,14 +305,14 @@ export default function App() {
           {activeTab === 'quality' && (
             <div className="miya-tab-stack">
             <TabIntro
-              title="Quality & Tools"
-              body="Диагностика и проверка качества. Основной блок — Quality Lab; инструменты и trace доступны как advanced."
+              title="Качество"
+              body="Диагностика и проверка качества. Основной блок — лаборатория качества; инструменты и trace доступны ниже."
             />
             <QualityLab />
-            <AdvancedSection title="Tools">
+            <AdvancedSection title="Инструменты">
               <ToolRegistry />
             </AdvancedSection>
-            <AdvancedSection title="Trace Viewer">{traceViewer}</AdvancedSection>
+            <AdvancedSection title="Диагностика trace">{traceViewer}</AdvancedSection>
             </div>
           )}
         </Suspense>

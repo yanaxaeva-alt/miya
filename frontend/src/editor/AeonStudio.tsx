@@ -13,7 +13,12 @@ import {
   type MiaosAeonStatus,
   type MiaosAeonTickResult,
 } from './miaosApi';
-import { DEFAULT_PROVIDER, isMlxAvailable, pickDefaultProvider } from './providerPrefs';
+import {
+  DEFAULT_PROVIDER,
+  isMlxAvailable,
+  pickDefaultProvider,
+  providerDisplayName,
+} from './providerPrefs';
 
 interface AeonStudioProps {
   onTraceId?: (traceId: string) => void;
@@ -212,13 +217,13 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
         {
           id: `consolidate-${Date.now()}`,
           role: 'system',
-          text: `Consolidation: retired=${result.retired_goal_ids.length}, active=${result.active_goal_count}, episodes=${result.episodes_seen}`,
+          text: `Память обновлена: активных целей ${result.active_goal_count}, обработано эпизодов ${result.episodes_seen}.`,
         },
       ]);
       await refreshStatus();
       window.dispatchEvent(new CustomEvent('miya:aeon-consolidated'));
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось выполнить consolidation');
+      setError(err instanceof Error ? err.message : 'Не удалось закрепить память');
     } finally {
       setBusy(false);
     }
@@ -229,25 +234,24 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
   return (
     <section id="miya-aeon-studio" className="miya-aeon-studio">
       <div className="miya-run-header">
-        <h2 className="miya-run-title">AEON Studio</h2>
+        <h2 className="miya-run-title">AEON</h2>
         <span className="miya-run-badge">{status?.identity || 'AEON'}</span>
         {status && (
           <span className={`miya-run-badge ${status.available ? 'miya-run-badge-ok' : 'miya-run-badge-off'}`}>
-            {status.available ? 'online' : 'offline'}
+            {status.available ? 'готов' : 'недоступен'}
           </span>
         )}
       </div>
 
       <p className="miya-run-hint">
-        AEON без GCS: constitution → governance → goals → memory → fixed MiaOS execution. Цели и heartbeat
-        сохраняются между запросами.
+        AEON держит в фокусе правила, цели и память. Цели и ритм обновления сохраняются между запросами.
       </p>
 
       <div className="miya-aeon-flow" aria-label="AEON рабочий поток">
         <div className="miya-aeon-flow-step">
           <span className="miya-aeon-flow-number">1</span>
           <strong>Спросить</strong>
-          <p>Проверь ответ AEON и trace.</p>
+          <p>Получите короткий ответ рядом с вопросом.</p>
         </div>
         <div className="miya-aeon-flow-step">
           <span className="miya-aeon-flow-number">2</span>
@@ -256,8 +260,8 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
         </div>
         <div className="miya-aeon-flow-step">
           <span className="miya-aeon-flow-number">3</span>
-          <strong>Consolidation</strong>
-          <p>Сожми эпизоды в skill notes.</p>
+          <strong>Закрепить память</strong>
+          <p>Соберите недавние эпизоды в заметки.</p>
         </div>
       </div>
 
@@ -287,7 +291,7 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
             {busy ? 'AEON думает…' : 'Спросить AEON'}
           </button>
           <button type="button" className="miya-btn" onClick={() => void runConsolidation()} disabled={busy}>
-            Consolidation
+            Закрепить память
           </button>
         </div>
       </div>
@@ -311,21 +315,21 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
       {status && (
         <details className="miya-advanced-section miya-aeon-runtime-details">
           <summary>
-            Runtime details: {status.active_goals.length} goals · {status.recent_ticks?.length ?? 0} ticks
+            Подробности работы: {status.active_goals.length} целей · {status.recent_ticks?.length ?? 0} циклов
           </summary>
           <div className="miya-advanced-section-body">
             <div className="miya-aeon-status-grid">
               <div className="miya-aeon-status-card">
-                <span className="miya-aeon-status-label">Identity</span>
+                <span className="miya-aeon-status-label">Идентичность</span>
                 <strong>{status.identity}</strong>
-                <p className="miya-aeon-status-meta">provider: {status.provider}</p>
+                <p className="miya-aeon-status-meta">модель: {status.provider}</p>
               </div>
               <div className="miya-aeon-status-card">
-                <span className="miya-aeon-status-label">Values</span>
+                <span className="miya-aeon-status-label">Ценности</span>
                 <p className="miya-aeon-status-meta">{status.values.join(', ')}</p>
               </div>
               <div className="miya-aeon-status-card">
-                <span className="miya-aeon-status-label">Active goals ({status.active_goals.length})</span>
+                <span className="miya-aeon-status-label">Активные цели ({status.active_goals.length})</span>
                 <ul className="miya-aeon-goals">
                   {status.active_goals.map((goal: MiaosAeonGoal) => (
                     <li key={goal.id} className="miya-aeon-goal-item">
@@ -354,7 +358,7 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
               </div>
               {status.recent_ticks && status.recent_ticks.length > 0 && (
                 <div className="miya-aeon-status-card">
-                  <span className="miya-aeon-status-label">Recent heartbeats</span>
+                  <span className="miya-aeon-status-label">Последние циклы</span>
                   <ul className="miya-aeon-goals">
                     {status.recent_ticks.map((tick) => (
                       <li key={tick.tick_id}>
@@ -444,7 +448,7 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
       </section>
 
       <details className="miya-advanced-section">
-        <summary>Advanced controls</summary>
+        <summary>Дополнительные настройки</summary>
         <div className="miya-advanced-section-body">
           <div className="miya-chat-controls">
             <label className="miya-field">
@@ -460,7 +464,7 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
                 {(providers.length ? providers : [{ name: 'mock', available: true, description: '' }]).map(
                   (item) => (
                     <option key={item.name} value={item.name} disabled={!item.available}>
-                      {item.name}
+                      {providerDisplayName(item.name)}
                       {item.available ? '' : ' (недоступен)'}
                     </option>
                   ),
@@ -469,7 +473,7 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
             </label>
 
             <label className="miya-field miya-aeon-checkbox">
-              <span>Force graph</span>
+              <span>Всегда запускать граф</span>
               <input
                 type="checkbox"
                 checked={forceGraph}
@@ -479,7 +483,7 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
             </label>
 
             <label className="miya-field miya-aeon-checkbox">
-              <span>Auto heartbeat</span>
+              <span>Автообновление</span>
               <input
                 type="checkbox"
                 checked={autoHeartbeat}
@@ -491,7 +495,7 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
 
           <div className="miya-run-actions">
             <button type="button" className="miya-btn" onClick={() => void runTick()} disabled={busy}>
-              Heartbeat tick
+              Обновить цикл
             </button>
             <button
               type="button"
@@ -499,7 +503,7 @@ export function AeonStudio({ onTraceId }: AeonStudioProps) {
               onClick={() => void refreshStatus()}
               disabled={busy}
             >
-              Обновить status
+              Обновить статус
             </button>
           </div>
 

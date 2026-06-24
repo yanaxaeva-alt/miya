@@ -242,8 +242,8 @@ export function SimpleGraph({
         dy: 8,
       },
       groups: [
-        { name: 'io', title: 'Input / Output' },
-        { name: 'tools', title: 'Tools: Web search / Draft', graphHeight: 360 },
+        { name: 'io', title: 'Вход и выход' },
+        { name: 'tools', title: 'Инструменты: поиск и черновик', graphHeight: 360 },
         { name: 'planning', title: 'Планирование' },
         { name: 'execution', title: 'Исполнение' },
         { name: 'memory', title: 'Память' },
@@ -354,25 +354,25 @@ export function SimpleGraph({
   const fitCanvas = () => {
     if (!graphInstance) return;
     graphInstance.zoomToFit({ padding: 40, maxScale: 1 });
-    setStatus('Холст: fit to view');
+    setStatus('Холст вписан в экран');
   };
 
   const undo = () => {
     if (!graphInstance?.canUndo()) return;
     graphInstance.undo();
-    setStatus('Undo');
+    setStatus('Отменено последнее действие');
   };
 
   const redo = () => {
     if (!graphInstance?.canRedo()) return;
     graphInstance.redo();
-    setStatus('Redo');
+    setStatus('Действие возвращено');
   };
 
   return (
     <section id="miya-graph-studio" className="miya-graph-studio">
       <div className="miya-run-header">
-        <h2 className="miya-run-title">Graph Studio</h2>
+        <h2 className="miya-run-title">Холст графа</h2>
         <span className="miya-run-badge">{nodeCount} узлов</span>
         <span className="miya-run-badge">{edgeCount} связей</span>
       </div>
@@ -380,17 +380,17 @@ export function SimpleGraph({
       <div className="miya-graph-chrome">
         <div className="miya-graph-chrome-actions">
           <button type="button" className="miya-btn" onClick={fitCanvas} disabled={!graphInstance}>
-            Fit view
+            Вписать
           </button>
           <button type="button" className="miya-btn" onClick={undo} disabled={!canUndo}>
-            Undo
+            Назад
           </button>
           <button type="button" className="miya-btn" onClick={redo} disabled={!canRedo}>
-            Redo
+            Вперёд
           </button>
         </div>
         <p className="miya-graph-chrome-hint">
-          Ctrl+колёсико — zoom · Ctrl+drag — pan · порты out→in · Inspector справа — JSON и output
+          Ctrl+колёсико — масштаб · Ctrl+перетаскивание — движение холста · соединяйте выход со входом
         </p>
       </div>
 

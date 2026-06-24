@@ -80,7 +80,7 @@ export function TraceViewer({ traceId, run }: TraceViewerProps) {
   return (
     <section id="miya-trace-viewer" className="miya-trace-viewer">
       <div className="miya-run-header">
-        <h2 className="miya-run-title">Trace Viewer</h2>
+        <h2 className="miya-run-title">Диагностика</h2>
         {traceId && (
           <button
             type="button"
@@ -95,9 +95,8 @@ export function TraceViewer({ traceId, run }: TraceViewerProps) {
 
       {!traceId && (
         <p className="miya-run-hint">
-          Запустите граф или отправьте сообщение в Chat Studio — здесь появится{' '}
-          <code>trace_id</code>, timeline прогона и таблица Policy Gate из{' '}
-          <code>decisions.jsonl</code>.
+          Запустите граф или отправьте сообщение в чате — здесь появятся технические детали
+          выполнения и решений безопасности.
         </p>
       )}
 
@@ -107,7 +106,7 @@ export function TraceViewer({ traceId, run }: TraceViewerProps) {
           {run?.trace_id === traceId && (
             <>
               {' '}
-              · <strong>run:</strong> <code>{run.run_id}</code> · <strong>status:</strong>{' '}
+              · <strong>запуск:</strong> <code>{run.run_id}</code> · <strong>статус:</strong>{' '}
               {run.status}
             </>
           )}
@@ -120,7 +119,7 @@ export function TraceViewer({ traceId, run }: TraceViewerProps) {
             Повторить на холсте
           </button>
           <span className="miya-run-hint">
-            {runEvents.length} graph events · клик по шагу timeline — scrub на холсте
+            {runEvents.length} событий графа · клик по шагу покажет его на холсте
           </span>
         </div>
       )}
@@ -129,23 +128,22 @@ export function TraceViewer({ traceId, run }: TraceViewerProps) {
 
       {traceId && !loading && !error && timeline.length === 0 && (
         <p className="miya-run-hint">
-          Timeline пуст. Записи появляются при chat/graph run, узлах <code>approval</code> и
-          решениях Policy Gate.
+          Журнал пуст. Записи появятся после чата, запуска графа или решений безопасности.
         </p>
       )}
 
       {policyRows.length > 0 && (
         <div className="miya-trace-section">
-          <h3 className="miya-trace-section-title">Policy Gate</h3>
+          <h3 className="miya-trace-section-title">Решения безопасности</h3>
           <div className="miya-model-table-wrap">
             <table className="miya-model-table miya-policy-table">
               <thead>
                 <tr>
                   <th>Время</th>
                   <th>Тип</th>
-                  <th>action_class</th>
+                  <th>Класс действия</th>
                   <th>Исход</th>
-                  <th>Actor</th>
+                  <th>Источник</th>
                 </tr>
               </thead>
               <tbody>
@@ -174,7 +172,7 @@ export function TraceViewer({ traceId, run }: TraceViewerProps) {
 
       {timeline.length > 0 && (
         <div className="miya-trace-section">
-          <h3 className="miya-trace-section-title">Run timeline</h3>
+          <h3 className="miya-trace-section-title">Журнал запуска</h3>
           <ol className="miya-trace-timeline">
             {timeline.map((item) => (
               <li

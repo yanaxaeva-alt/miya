@@ -7,7 +7,12 @@ import {
   type MiaosPersonaManifest,
   type MiaosProviderInfo,
 } from './miaosApi';
-import { DEFAULT_PROVIDER, isMlxAvailable, pickDefaultProvider } from './providerPrefs';
+import {
+  DEFAULT_PROVIDER,
+  isMlxAvailable,
+  pickDefaultProvider,
+  providerDisplayName,
+} from './providerPrefs';
 
 interface ChatStudioProps {
   onTraceId?: (traceId: string) => void;
@@ -19,6 +24,26 @@ interface ChatMessage {
   text: string;
   traceId?: string;
   blocked?: boolean;
+}
+
+function readableChatText(text: string): string {
+  const reasoningMarkers = ['Thinking Process:', 'Thinking process:', 'Reasoning:', 'Chain of thought:', 'Thought process:'];
+  const finalMarkers = ['Final Answer:', 'Final answer:', 'Answer:', 'Ответ:'];
+  const reasoningIndexes = reasoningMarkers.map((marker) => text.indexOf(marker)).filter((index) => index >= 0);
+  const reasoningIndex = reasoningIndexes.length ? Math.min(...reasoningIndexes) : -1;
+  const hasMarkdownArtifact = text.startsWith('**\n*') || text.startsWith('** *');
+
+  if (reasoningIndex === -1 && !hasMarkdownArtifact) return text;
+
+  const finalMarker = finalMarkers.find((marker) => text.includes(marker));
+  if (finalMarker) return text.split(finalMarker, 2)[1].trim();
+
+  if (!hasMarkdownArtifact) {
+    const visible = text.slice(0, reasoningIndex).trim();
+    if (visible) return visible;
+  }
+
+  return 'Я обработала запрос, но локальная модель вернула служебный черновик. Попробуйте спросить короче.';
 }
 
 export function ChatStudio({ onTraceId }: ChatStudioProps) {
@@ -101,24 +126,23 @@ export function ChatStudio({ onTraceId }: ChatStudioProps) {
   return (
     <section id="miya-chat-studio" className="miya-chat-studio">
       <div className="miya-run-header">
-        <h2 className="miya-run-title">Chat Studio</h2>
-        <span className="miya-run-badge">{messages.length} msgs</span>
+        <h2 className="miya-run-title">Чат с Mia</h2>
+        <span className="miya-run-badge">{messages.length} сообщ.</span>
       </div>
 
       <p className="miya-run-hint">
-        Один ход через <code>POST /chat</code>: persona → PersonalityGuard → провайдер → Policy Gate → audit
-        log.
+        Обычный диалог с Mia. Служебные trace и проверки остаются в диагностике.
       </p>
       {selectedPersona?.model_binding && (
         <p className="miya-run-hint">
-          Persona binding: <code>{selectedPersona.model_binding.provider}</code> /{' '}
+          Модель Mia: <code>{selectedPersona.model_binding.provider}</code> /{' '}
           <code>{selectedPersona.model_binding.model_id}</code>
         </p>
       )}
 
       <div className="miya-chat-controls">
         <label className="miya-field">
-          <span>Persona package</span>
+          <span>Персона</span>
           <select
             value={selectedPackageId}
             onChange={(e) => setSelectedPackageId(e.target.value)}
@@ -145,7 +169,7 @@ export function ChatStudio({ onTraceId }: ChatStudioProps) {
             {(providers.length ? providers : [{ name: 'mock', available: true, description: '' }]).map(
               (item) => (
                 <option key={item.name} value={item.name} disabled={!item.available}>
-                  {item.name}
+                  {providerDisplayName(item.name)}
                   {item.available ? '' : ' (недоступен)'}
                 </option>
               ),
@@ -163,7 +187,7 @@ export function ChatStudio({ onTraceId }: ChatStudioProps) {
 
       {personas.length === 0 && (
         <p className="miya-run-hint">
-          Сначала создайте persona в **Persona Studio → Создать Mia**, затем вернитесь сюда.
+          Сначала создайте персону Mia во вкладке «Модели и персона», затем вернитесь сюда.
         </p>
       )}
 
@@ -176,9 +200,8 @@ export function ChatStudio({ onTraceId }: ChatStudioProps) {
             >
               <span className="miya-chat-msg-label">
                 {message.role === 'user' ? 'Вы' : 'Mia'}
-                {message.traceId ? ` · ${message.traceId}` : ''}
               </span>
-              <p className="miya-chat-msg-text">{message.text}</p>
+              <p className="miya-chat-msg-text">{readableChatText(message.text)}</p>
             </li>
           ))}
         </ol>

@@ -18,3 +18,24 @@ export function pickDefaultProvider(providers: MiaosProviderInfo[]): string {
 export function isMlxAvailable(providers: MiaosProviderInfo[]): boolean {
   return providers.some((item) => item.name === 'mlx' && item.available);
 }
+
+export function providerDisplayName(providerName: string): string {
+  if (providerName === 'omlx') return 'oMLX локально';
+  if (providerName === 'mlx') return 'MLX напрямую';
+  if (providerName === 'mock') return 'Тестовый режим';
+  return providerName;
+}
+
+export function providerDescription(provider: MiaosProviderInfo | undefined): string {
+  if (!provider) return '';
+  if (provider.name === 'omlx') {
+    return 'Основной локальный сервер oMLX. Подходит для обычной работы Mia и AEON.';
+  }
+  if (provider.name === 'mlx') {
+    return 'Запасной прямой запуск через mlx-lm. Первый запуск может скачать веса модели.';
+  }
+  if (provider.name === 'mock') {
+    return 'Тестовый режим без реальной модели. Нужен для проверки интерфейса и сценариев.';
+  }
+  return provider.description;
+}

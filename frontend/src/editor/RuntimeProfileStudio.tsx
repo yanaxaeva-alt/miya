@@ -41,7 +41,7 @@ export function RuntimeProfileStudio() {
       }
     } catch (err) {
       setProfiles([]);
-      setError(err instanceof Error ? err.message : 'Не удалось загрузить runtime profiles');
+      setError(err instanceof Error ? err.message : 'Не удалось загрузить профили компьютера');
     } finally {
       setLoading(false);
     }
@@ -62,8 +62,8 @@ export function RuntimeProfileStudio() {
   return (
     <section id="miya-runtime-profile" className="miya-runtime-profile">
       <div className="miya-run-header">
-        <h2 className="miya-run-title">Runtime Profile</h2>
-        <span className="miya-run-badge">{profiles.length} profiles</span>
+        <h2 className="miya-run-title">Профиль компьютера</h2>
+        <span className="miya-run-badge">{profiles.length} профилей</span>
         {selected && <span className="miya-run-badge miya-run-badge-ok">{selected}</span>}
         <button
           type="button"
@@ -76,8 +76,8 @@ export function RuntimeProfileStudio() {
       </div>
 
       <p className="miya-run-hint">
-        Профиль железа из <code>GET /runtime/profiles</code>. Выбор сохраняется в браузере и задаёт
-        рекомендуемые лимиты моделей и safety defaults для сценариев v1.0.
+        Выберите профиль под ваш Mac. Он задаёт рекомендуемые лимиты модели, контекст и уровень
+        автономности для локальной работы.
       </p>
 
       {error && <pre className="miya-run-error">{error}</pre>}
@@ -101,7 +101,7 @@ export function RuntimeProfileStudio() {
                   {profile.hardware.unified_memory_gb} GB · {profile.hardware.apple_silicon_generation}
                 </span>
                 <span className="miya-runtime-card-meta">
-                  ceiling {profile.safety_defaults.autonomy_ceiling} · {profile.background_cycles}
+                  автономность {profile.safety_defaults.autonomy_ceiling} · {profile.background_cycles}
                 </span>
               </button>
             );
@@ -115,7 +115,7 @@ export function RuntimeProfileStudio() {
             <span className="miya-aeon-status-label">Выбранный профиль</span>
             <h3>{active.hardware.name}</h3>
             <p>
-              {active.name} — профиль под {active.hardware.unified_memory_gb} GB unified memory.
+              {active.name} — профиль под {active.hardware.unified_memory_gb} GB общей памяти.
               Он подсказывает, какие модели безопасно держать в памяти и какой контекст использовать.
             </p>
           </div>

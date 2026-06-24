@@ -5,7 +5,7 @@ from pathlib import Path
 from miaos.models import InferenceRequest, InferenceResponse, MockModelProvider
 from miaos.observability import DecisionLog
 from miaos.persona import PersonaPackage, create_persona_package, load_persona_package
-from miaos.runtime.chat import ChatSession
+from miaos.runtime.chat import ChatSession, public_chat_text
 
 CHAT_TURN_COUNT = 5
 
@@ -93,3 +93,17 @@ def test_forbidden_tool_intent_is_blocked_before_provider_call(tmp_path: Path) -
     assert turn.blocked is True
     assert "Blocked by Policy Gate" in turn.response_text
     assert provider.requests == []
+
+
+def test_public_chat_text_hides_reasoning() -> None:
+    """Reasoning output is replaced by the final answer when present."""
+    raw = "Thinking Process:\ninternal notes\n\nFinal Answer: Привет! Я Mia."
+
+    assert public_chat_text(raw) == "Привет! Я Mia."
+
+
+def test_public_chat_text_falls_back_for_reasoning_only() -> None:
+    """Reasoning-only output falls back to a readable user-facing message."""
+    raw = "Thinking Process:\ninternal notes only"
+
+    assert public_chat_text(raw).startswith("Я обработала запрос")

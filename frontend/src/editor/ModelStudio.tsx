@@ -14,6 +14,7 @@ import {
 } from './miaosApi';
 import { DEMO_MODELS } from './demoAssets';
 import { getSelectedRuntimeProfile } from './editorPrefs';
+import { providerDescription, providerDisplayName } from './providerPrefs';
 
 interface ModelStudioProps {
   models: MiaosModelRecord[];
@@ -219,7 +220,7 @@ export function ModelStudio({ models, onModelsChange }: ModelStudioProps) {
     try {
       const providerList = await setOmlxDefaultModel(selectedOmlxModel);
       setProviders(providerList);
-      setMessage(`oMLX model saved: ${selectedOmlxModel}`);
+      setMessage(`Основная модель сохранена: ${selectedOmlxModel}`);
       window.dispatchEvent(new CustomEvent('miya:studio-refresh'));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось выбрать oMLX модель');
@@ -231,11 +232,13 @@ export function ModelStudio({ models, onModelsChange }: ModelStudioProps) {
   return (
     <section id="miya-model-studio" className="miya-model-studio">
       <div className="miya-run-header">
-        <h2 className="miya-run-title">Model Studio</h2>
-        <span className="miya-run-badge">provider: {activeProvider?.name ?? 'unknown'}</span>
+        <h2 className="miya-run-title">Модели</h2>
+        <span className="miya-run-badge">
+          провайдер: {activeProvider ? providerDisplayName(activeProvider.name) : 'не выбран'}
+        </span>
         {summary.recommended && (
           <span className="miya-run-badge miya-run-badge-ok">
-            recommended: {summary.recommended.model_id.slice(0, 8)}…
+            рекомендовано: {summary.recommended.model_id.slice(0, 8)}…
           </span>
         )}
         <button
@@ -262,7 +265,7 @@ export function ModelStudio({ models, onModelsChange }: ModelStudioProps) {
         </div>
         <div className="miya-model-select-row">
           <label className="miya-field miya-model-select-field">
-            <span>oMLX model</span>
+            <span>Модель oMLX</span>
             <select
               value={selectedOmlxModel}
               onChange={(event) => setSelectedOmlxModel(event.target.value)}
@@ -293,11 +296,11 @@ export function ModelStudio({ models, onModelsChange }: ModelStudioProps) {
           </button>
         </div>
         <p className="miya-run-provider-hint">
-          oMLX: {omlxProvider?.available ? omlxProvider.description : 'недоступен'}
+          oMLX: {omlxProvider?.available ? providerDescription(omlxProvider) : 'недоступен'}
           {mlxProvider ? (
             <>
               <br />
-              MLX fallback: {mlxProvider.available ? mlxProvider.description : 'недоступен'}
+              Запасной MLX: {mlxProvider.available ? providerDescription(mlxProvider) : 'недоступен'}
             </>
           ) : null}
         </p>
@@ -309,7 +312,7 @@ export function ModelStudio({ models, onModelsChange }: ModelStudioProps) {
           <p>Реальная локальная модель. Используйте для обычной работы Mia и AEON.</p>
         </div>
         <div>
-          <strong>MLX fallback</strong>
+          <strong>Запасной MLX</strong>
           <p>Прямой запуск через <code>mlx-lm</code>, если oMLX не нужен.</p>
         </div>
         <div>
@@ -322,11 +325,11 @@ export function ModelStudio({ models, onModelsChange }: ModelStudioProps) {
       {message && <p className="miya-persona-message">{message}</p>}
 
       <details className="miya-advanced-section">
-        <summary>Advanced: demo registry, pool roles, lab certification</summary>
+        <summary>Для разработки: демо-реестр и сертификация</summary>
         <div className="miya-advanced-section-body">
           <p className="miya-run-hint">
-            Этот раздел нужен для разработки: демо-модели — это metadata-записи в <code>GET /models</code>,
-            pool role показывает предполагаемую роль модели, lab cert — ручная отметка качества.
+            Этот раздел нужен для разработки: демо-модели — это служебные записи в <code>GET /models</code>,
+            роль пула показывает назначение модели, сертификация — ручную отметку качества.
           </p>
           <div className="miya-run-actions">
             <button
@@ -349,11 +352,11 @@ export function ModelStudio({ models, onModelsChange }: ModelStudioProps) {
 
           <div className="miya-model-compat-controls">
             <label className="miya-field miya-model-compat-field">
-              <span>Runtime profile</span>
+              <span>Профиль компьютера</span>
               <input type="text" value={profileName} readOnly />
             </label>
             <label className="miya-field miya-model-compat-field">
-              <span>Pool role</span>
+              <span>Роль в пуле</span>
               <select
                 value={poolRole}
                 onChange={(event) =>
@@ -368,7 +371,7 @@ export function ModelStudio({ models, onModelsChange }: ModelStudioProps) {
               </select>
             </label>
             <p className="miya-run-hint miya-model-compat-summary">
-              selectable: {summary.selectable}/{compatibility.length || models.length} · warnings:{' '}
+              доступно: {summary.selectable}/{compatibility.length || models.length} · предупреждений:{' '}
               {summary.warnings}
             </p>
           </div>
@@ -386,12 +389,12 @@ export function ModelStudio({ models, onModelsChange }: ModelStudioProps) {
                 <thead>
                   <tr>
                     <th>Модель</th>
-                    <th>Quant</th>
-                    <th>Context</th>
+                    <th>Квант</th>
+                    <th>Контекст</th>
                     <th>Размер</th>
                     <th>Роль</th>
                     <th>Совместимость</th>
-                    <th>Lab cert</th>
+                    <th>Сертификация</th>
                   </tr>
                 </thead>
                 <tbody>

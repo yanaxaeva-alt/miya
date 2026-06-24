@@ -22,6 +22,32 @@ function formatTs(ts: string) {
   }
 }
 
+function readableMemoryText(text: string): string {
+  const reasoningMarkers = ['Thinking Process:', 'Thinking process:', 'Reasoning:', 'Chain of thought:', 'Thought process:'];
+  const finalMarkers = ['Final Answer:', 'Final answer:', 'Answer:', 'Ответ:'];
+  const reasoningIndexes = reasoningMarkers.map((marker) => text.indexOf(marker)).filter((index) => index >= 0);
+  const reasoningIndex = reasoningIndexes.length ? Math.min(...reasoningIndexes) : -1;
+  const hasMarkdownArtifact = text.startsWith('**\n*') || text.startsWith('** *');
+
+  if (reasoningIndex === -1 && !hasMarkdownArtifact) return text;
+
+  const finalMarker = finalMarkers.find((marker) => text.includes(marker));
+  if (finalMarker) return text.split(finalMarker, 2)[1].trim();
+
+  if (!hasMarkdownArtifact) {
+    const visible = text.slice(0, reasoningIndex).trim();
+    if (visible) return visible;
+  }
+
+  return 'Служебный черновик скрыт. Этот старый эпизод можно удалить из памяти.';
+}
+
+function memoryRoleLabel(role: string): string {
+  if (role === 'assistant') return 'Mia';
+  if (role === 'user') return 'Вы';
+  return role;
+}
+
 export function MemoryStudio() {
   const [summary, setSummary] = useState<MiaosMemorySummary | null>(null);
   const [episodes, setEpisodes] = useState<MiaosMemoryEpisode[]>([]);
@@ -53,7 +79,7 @@ export function MemoryStudio() {
       setEpisodes([]);
       setFacts([]);
       setNotes([]);
-      setError(err instanceof Error ? err.message : 'Не удалось загрузить Memory');
+      setError(err instanceof Error ? err.message : 'Не удалось загрузить память');
     } finally {
       setLoading(false);
     }
@@ -72,8 +98,8 @@ export function MemoryStudio() {
   return (
     <section id="miya-memory-studio" className="miya-memory-studio">
       <div className="miya-run-header">
-        <h2 className="miya-run-title">Memory Studio</h2>
-        <span className="miya-run-badge">{summary?.episodes ?? 0} episodes</span>
+        <h2 className="miya-run-title">Хранилище памяти</h2>
+        <span className="miya-run-badge">{summary?.episodes ?? 0} эпизодов</span>
         <button
           type="button"
           className="miya-btn miya-btn-secondary"
@@ -85,14 +111,13 @@ export function MemoryStudio() {
       </div>
 
       <p className="miya-run-hint">
-        Memory MVP в SQLite: episodic log, profile facts, domain notes, deletion logging. Chat Studio
-        автоматически пишет эпизоды после каждого хода.
+        Здесь видны диалоги, устойчивые факты и заметки. Чат автоматически добавляет новые эпизоды.
       </p>
 
       {summary && (
         <p className="miya-run-hint">
-          episodes {summary.episodes} · facts {summary.profile_facts} · notes {summary.domain_notes}{' '}
-          · deletions logged {summary.deletions_logged}
+          Эпизоды {summary.episodes} · факты {summary.profile_facts} · заметки {summary.domain_notes}{' '}
+          · удалений {summary.deletions_logged}
         </p>
       )}
 
@@ -100,13 +125,13 @@ export function MemoryStudio() {
 
       <div className="miya-memory-grid">
         <div className="miya-memory-panel">
-          <h3 className="miya-trace-section-title">Episodic memory</h3>
-          {episodes.length === 0 && <p className="miya-run-hint">Пока пусто — напишите в Chat Studio.</p>}
+          <h3 className="miya-trace-section-title">Диалоги</h3>
+          {episodes.length === 0 && <p className="miya-run-hint">Пока пусто — напишите в чате.</p>}
           <ul className="miya-memory-list">
             {episodes.map((episode) => (
               <li key={episode.id} className="miya-memory-item">
                 <div className="miya-memory-item-head">
-                  <code>{episode.role}</code>
+                  <code>{memoryRoleLabel(episode.role)}</code>
                   <span>{formatTs(episode.created_at)}</span>
                   <button
                     type="button"
@@ -116,10 +141,10 @@ export function MemoryStudio() {
                     Удалить
                   </button>
                 </div>
-                <p className="miya-memory-item-text">{episode.content}</p>
+                <p className="miya-memory-item-text">{readableMemoryText(episode.content)}</p>
                 {episode.tags.length > 0 && (
                   <p className="miya-model-id">
-                    tags: {episode.tags.map((tag) => (
+                    метки: {episode.tags.map((tag) => (
                       <code key={tag}>{tag}</code>
                     ))}
                   </p>
@@ -130,7 +155,7 @@ export function MemoryStudio() {
         </div>
 
         <div className="miya-memory-panel">
-          <h3 className="miya-trace-section-title">Profile facts</h3>
+          <h3 className="miya-trace-section-title">Факты профиля</h3>
           <div className="miya-graph-save-row">
             <label className="miya-field miya-graph-save-field">
               <span>Ключ</span>
@@ -164,10 +189,10 @@ export function MemoryStudio() {
         </div>
 
         <div className="miya-memory-panel">
-          <h3 className="miya-trace-section-title">Domain notes</h3>
+          <h3 className="miya-trace-section-title">Заметки</h3>
           <div className="miya-graph-save-row">
             <label className="miya-field miya-graph-save-field">
-              <span>Domain</span>
+              <span>Тема</span>
               <input value={noteDomain} onChange={(e) => setNoteDomain(e.target.value)} />
             </label>
             <label className="miya-field miya-graph-save-field">

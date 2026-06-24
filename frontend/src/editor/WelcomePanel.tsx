@@ -92,43 +92,43 @@ export function WelcomePanel() {
   const steps: SetupStep[] = [
     {
       id: 'backend',
-      label: 'Backend MiaOS доступен (порт 8000)',
+      label: 'Локальный MiaOS доступен',
       target: 'miya-runtime-profile',
       done: backendOk,
     },
     {
       id: 'profile',
-      label: 'Выбран runtime profile под ваше железо',
+      label: 'Выбран профиль компьютера',
       target: 'miya-runtime-profile',
       done: profileSelected,
     },
     {
       id: 'persona',
-      label: 'Создан или импортирован persona package (.mia)',
+      label: 'Персона Mia готова',
       target: 'miya-persona-studio',
       done: personaReady,
     },
     {
       id: 'templates',
-      label: 'Template Registry доступен и содержит Mia Minimal',
+      label: 'Шаблон Mia Minimal доступен',
       target: 'miya-template-registry',
       done: templatesReady,
     },
     {
       id: 'models',
-      label: 'Model Studio содержит локальные/демо-модели',
+      label: 'Модели доступны для выбора',
       target: 'miya-model-studio',
       done: modelsReady,
     },
     {
       id: 'aeon',
-      label: 'AEON Studio отвечает на /aeon/status',
+      label: 'AEON отвечает',
       target: 'miya-aeon-studio',
       done: aeonReady,
     },
     {
       id: 'graph',
-      label: 'Пройдите сценарий v1.0 acceptance',
+      label: 'Пройдите первый сценарий',
       target: 'miya-scenario',
       done: false,
     },
@@ -173,8 +173,8 @@ export function WelcomePanel() {
       </div>
 
       <p className="miya-run-hint">
-        Мастер первого запуска для локальной v1.0: профиль железа, templates, модели, persona
-        package, граф и run. Большинство шагов проверяются автоматически.
+        Мастер первого запуска проверяет локальный MiaOS, профиль компьютера, модель,
+        персону Mia, шаблоны и AEON. Большинство шагов проверяются автоматически.
       </p>
 
       <ol className="miya-welcome-steps">

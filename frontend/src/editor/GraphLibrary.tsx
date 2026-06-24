@@ -71,7 +71,7 @@ export function GraphLibrary({ graph }: GraphLibraryProps) {
       if (warnings.length) {
         setMessage((prev) => `${prev}\nАвто-правки: ${warnings.join('; ')}`);
       }
-      setStatus(`Graph Library: ${saved.filename}`);
+      setStatus(`Граф сохранён в библиотеку: ${saved.filename}`);
       await refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось сохранить граф');
@@ -100,7 +100,7 @@ export function GraphLibrary({ graph }: GraphLibraryProps) {
         const spec = await fetchSavedGraph(filename);
         const count = importMiaosToCanvas(graph, spec);
         setMessage(`Загружено на холст: ${filename} (${count} узлов)`);
-        setStatus(`Graph Library → холст: ${filename}`);
+        setStatus(`Граф загружен на холст: ${filename}`);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Не удалось загрузить граф');
       } finally {
@@ -113,8 +113,8 @@ export function GraphLibrary({ graph }: GraphLibraryProps) {
   return (
     <section className="miya-graph-library">
       <div className="miya-run-header">
-        <h2 className="miya-run-title">Graph Library</h2>
-        <span className="miya-run-badge">{items.length} graphs</span>
+        <h2 className="miya-run-title">Библиотека графов</h2>
+        <span className="miya-run-badge">{items.length} графов</span>
         <button
           type="button"
           className="miya-btn miya-btn-secondary"
@@ -126,8 +126,7 @@ export function GraphLibrary({ graph }: GraphLibraryProps) {
       </div>
 
       <p className="miya-run-hint">
-        Каталог MiaOS-графов в <code>.miaos/graphs/</code> — <code>GET /graphs</code>, сохранение через{' '}
-        <code>POST /graphs</code>.
+        Сохранённые сценарии из <code>.miaos/graphs/</code>. Их можно вернуть на холст и доработать.
       </p>
 
       <div className="miya-graph-save-row">
@@ -166,7 +165,7 @@ export function GraphLibrary({ graph }: GraphLibraryProps) {
             <thead>
               <tr>
                 <th>Файл</th>
-                <th>graph_id</th>
+                <th>ID графа</th>
                 <th>Название</th>
                 <th>Узлы</th>
                 <th />

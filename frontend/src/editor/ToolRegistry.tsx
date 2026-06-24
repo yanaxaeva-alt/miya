@@ -14,7 +14,7 @@ export function ToolRegistry() {
       setTools(list);
     } catch (err) {
       setTools([]);
-      setError(err instanceof Error ? err.message : 'Не удалось загрузить Tool Registry');
+      setError(err instanceof Error ? err.message : 'Не удалось загрузить инструменты');
     } finally {
       setLoading(false);
     }
@@ -33,8 +33,8 @@ export function ToolRegistry() {
   return (
     <section id="miya-tool-registry" className="miya-tool-registry">
       <div className="miya-run-header">
-        <h2 className="miya-run-title">Tool Registry</h2>
-        <span className="miya-run-badge">{tools.length} tools</span>
+        <h2 className="miya-run-title">Инструменты</h2>
+        <span className="miya-run-badge">{tools.length} инструментов</span>
         <button
           type="button"
           className="miya-btn miya-btn-secondary"
@@ -46,10 +46,8 @@ export function ToolRegistry() {
       </div>
 
       <p className="miya-run-hint">
-        Каталог sandbox-only инструментов из <code>GET /tools</code>. Перетащите узел из палитры{' '}
-        <strong>Sandbox tools</strong> на холст, выберите <code>tool_name</code> в Inspector и
-        запустите граф — backend выполнит mock через Policy Gate и событие{' '}
-        <code>tool_invoked</code>.
+        Каталог инструментов, которые можно вызывать из графа. Они проходят проверку безопасности
+        и выполняются только в sandbox-режиме.
       </p>
 
       {error && <pre className="miya-run-error">{error}</pre>}
@@ -66,8 +64,8 @@ export function ToolRegistry() {
             <thead>
               <tr>
                 <th>Инструмент</th>
-                <th>action_class</th>
-                <th>Sandbox</th>
+                <th>Класс действия</th>
+                <th>Песочница</th>
                 <th>Статус</th>
               </tr>
             </thead>
@@ -88,7 +86,7 @@ export function ToolRegistry() {
                         tool.enabled ? 'miya-model-status-active' : 'miya-model-status-archived'
                       }`}
                     >
-                      {tool.enabled ? 'enabled' : 'disabled'}
+                      {tool.enabled ? 'включён' : 'выключен'}
                     </span>
                   </td>
                 </tr>

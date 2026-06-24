@@ -7,6 +7,20 @@ from miaos.observability import DecisionLog, new_trace_id
 from miaos.persona import PersonalityGuard, PersonaPackage
 from miaos.safety import ActionClass, ActionRequest, PolicyDecision, PolicyGate
 
+REASONING_MARKERS = (
+    "Thinking Process:",
+    "Thinking process:",
+    "Reasoning:",
+    "Chain of thought:",
+    "Thought process:",
+)
+FINAL_ANSWER_MARKERS = (
+    "Final Answer:",
+    "Final answer:",
+    "Answer:",
+    "Ответ:",
+)
+
 
 class ChatTurn(BaseModel):
     """One audited chat turn."""
@@ -90,7 +104,7 @@ class ChatSession:
         return ChatTurn(
             trace_id=response.trace_id or policy_decision.trace_id,
             user_message=user_message,
-            response_text=response.text,
+            response_text=public_chat_text(response.text),
             policy_decision=policy_decision,
         )
 
@@ -114,3 +128,41 @@ def detect_forbidden_tool_intent(message: str) -> ActionClass | None:
     if "bypass_kill_switch" in normalized or "bypass kill switch" in normalized:
         return ActionClass.BYPASS_KILL_SWITCH
     return None
+
+
+def public_chat_text(text: str) -> str:
+    """Return a user-facing chat response with hidden reasoning artifacts removed."""
+    stripped = text.strip()
+    if not stripped:
+        return stripped
+
+    marker_index = _first_marker_index(stripped, REASONING_MARKERS)
+    has_markdown_artifact = stripped.startswith(("**\n*", "** *"))
+    if marker_index is None and not has_markdown_artifact:
+        return stripped
+
+    if marker_index is not None:
+        final = _extract_after_marker(stripped, FINAL_ANSWER_MARKERS)
+        if final:
+            return final
+
+        prefix = stripped[:marker_index].strip()
+        if prefix:
+            return prefix
+
+    return (
+        "Я обработала запрос, но локальная модель вернула служебный черновик. "
+        "Попробуйте спросить короче."
+    )
+
+
+def _first_marker_index(text: str, markers: tuple[str, ...]) -> int | None:
+    indexes = [index for marker in markers if (index := text.find(marker)) >= 0]
+    return min(indexes) if indexes else None
+
+
+def _extract_after_marker(text: str, markers: tuple[str, ...]) -> str:
+    for marker in markers:
+        if marker in text:
+            return text.split(marker, maxsplit=1)[1].strip()
+    return ""

@@ -41,7 +41,7 @@ export function PersonaStudio() {
       setPersonas(list);
     } catch (err) {
       setPersonas([]);
-      setError(err instanceof Error ? err.message : 'Не удалось загрузить persona packages');
+      setError(err instanceof Error ? err.message : 'Не удалось загрузить пакеты персоны');
     } finally {
       setLoading(false);
     }
@@ -124,8 +124,8 @@ export function PersonaStudio() {
   return (
     <section id="miya-persona-studio" className="miya-persona-studio">
       <div className="miya-run-header">
-        <h2 className="miya-run-title">Persona Studio</h2>
-        <span className="miya-run-badge">{personas.length} packages</span>
+        <h2 className="miya-run-title">Персона Mia</h2>
+        <span className="miya-run-badge">{personas.length} пакетов</span>
         <button
           type="button"
           className="miya-btn miya-btn-secondary"
@@ -145,13 +145,13 @@ export function PersonaStudio() {
       </div>
 
       <p className="miya-run-hint">
-        Каталог <code>.mia</code> persona packages из <code>GET /personas</code>. Экспорт —
-        zip-архив для переноса; импорт — <code>POST /personas/import</code>.
+        Здесь хранится персона Mia и её привязка к модели. Экспорт делает zip-архив для переноса,
+        импорт добавляет готовый пакет.
       </p>
 
       <div className="miya-persona-import-row">
         <label className="miya-field miya-persona-import-field">
-          <span>package_id при импорте (опционально)</span>
+          <span>ID пакета при импорте (необязательно)</span>
           <input
             type="text"
             value={importPackageId}
@@ -196,10 +196,10 @@ export function PersonaStudio() {
             <thead>
               <tr>
                 <th>Имя</th>
-                <th>persona_id</th>
-                <th>package_id</th>
-                <th>Provider</th>
-                <th>Model</th>
+                <th>ID персоны</th>
+                <th>ID пакета</th>
+                <th>Провайдер</th>
+                <th>Модель</th>
                 <th>Версия</th>
                 <th>Создан</th>
                 <th />

@@ -68,9 +68,9 @@ export function GraphJsonPanel({ graph }: GraphJsonPanelProps) {
     setMessage(null);
     try {
       const response = await validateMiaosGraphRemote(result.spec);
-      setMessage(`Backend OK: ${response.name} (${response.graph_id})`);
+      setMessage(`MiaOS принял граф: ${response.name} (${response.graph_id})`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Backend validation failed');
+      setError(err instanceof Error ? err.message : 'Проверка MiaOS не прошла');
     } finally {
       setValidating(false);
     }
@@ -88,7 +88,7 @@ export function GraphJsonPanel({ graph }: GraphJsonPanelProps) {
           onClick={() => void validateRemote()}
           disabled={validating || !graph}
         >
-          {validating ? 'Проверка…' : 'Validate backend'}
+          {validating ? 'Проверка…' : 'Проверить MiaOS'}
         </button>
       </div>
 

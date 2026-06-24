@@ -14,7 +14,13 @@ import { buildMiaosNodeIdMap, exportToMiaosGraph } from './miaosExport';
 import { applyRunEvent, delay, resetRunVisuals } from './runHighlight';
 import { applyEventsUpTo, replayGraphEvents } from './runReplay';
 import { extractMiaAnswer, extractMiaQuestion } from './runOutput';
-import { DEFAULT_PROVIDER, isMlxAvailable, pickDefaultProvider } from './providerPrefs';
+import {
+  DEFAULT_PROVIDER,
+  isMlxAvailable,
+  pickDefaultProvider,
+  providerDescription,
+  providerDisplayName,
+} from './providerPrefs';
 import { setStatus } from '../miyaBridge';
 
 interface RunConsoleProps {
@@ -60,10 +66,10 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
           return pickDefaultProvider(list);
         });
       }
-      setStatus(ok ? 'Backend MiaOS доступен' : 'Backend MiaOS offline — см. Run Console');
+      setStatus(ok ? 'MiaOS доступен' : 'MiaOS недоступен — см. запуск графа');
     } catch {
       setOnline(false);
-      setStatus('Backend MiaOS offline — см. Run Console');
+      setStatus('MiaOS недоступен — см. запуск графа');
     } finally {
       setCheckingHealth(false);
     }
@@ -109,7 +115,7 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
 
       const replayEvents = targetEvents ?? events;
       if (replayEvents.length === 0) {
-        window.alert('Нет событий для replay — сначала запустите граф.');
+        window.alert('Нет событий для повтора — сначала запустите граф.');
         return;
       }
 
@@ -129,14 +135,14 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
           },
           signal: controller.signal,
         });
-        setStatus(`Replay завершён: ${replayEvents.length} events`);
+        setStatus(`Повтор завершён: ${replayEvents.length} событий`);
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') {
-          setStatus('Replay остановлен');
+          setStatus('Повтор остановлен');
         } else {
           const message = err instanceof Error ? err.message : 'Не удалось воспроизвести события.';
           setError(message);
-          setStatus('Ошибка replay');
+          setStatus('Ошибка повтора');
         }
       } finally {
         replayAbortRef.current = null;
@@ -247,11 +253,11 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
   return (
     <section id="miya-run-console" className="miya-run-console">
       <div className="miya-run-header">
-        <h2 className="miya-run-title">Run Console</h2>
+        <h2 className="miya-run-title">Запуск графа</h2>
         <span
           className={`miya-run-badge ${online ? 'miya-run-badge-ok' : online === false ? 'miya-run-badge-off' : ''}`}
         >
-          {online === null ? 'Проверка backend…' : online ? 'MiaOS online' : 'MiaOS offline'}
+          {online === null ? 'Проверка MiaOS…' : online ? 'MiaOS доступен' : 'MiaOS недоступен'}
         </span>
         <button
           type="button"
@@ -281,7 +287,7 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
       </div>
 
       <details className="miya-advanced-section">
-        <summary>Run settings</summary>
+        <summary>Настройки запуска</summary>
         <div className="miya-advanced-section-body">
           <label className="miya-field miya-run-input">
             <span>Провайдер модели</span>
@@ -293,9 +299,8 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
               {(providers.length ? providers : [{ name: 'mock', available: true, description: '' }]).map(
                 (item) => (
                   <option key={item.name} value={item.name} disabled={!item.available}>
-                    {item.name}
+                    {providerDisplayName(item.name)}
                     {item.available ? '' : ' (недоступен)'}
-                    {item.name === 'mlx' ? ' — Qwen via mlx-lm' : ' — dev/test'}
                   </option>
                 ),
               )}
@@ -311,13 +316,7 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
 
           {providers.length > 0 && (
             <p className="miya-run-provider-hint">
-              {providers.find((item) => item.name === selectedProvider)?.description}
-              {selectedProvider === 'mlx' && providers.find((item) => item.name === 'mlx')?.available && (
-                <>
-                  <br />
-                  Первый запуск может скачать веса с HuggingFace — это займёт несколько минут.
-                </>
-              )}
+              {providerDescription(providers.find((item) => item.name === selectedProvider))}
             </p>
           )}
         </div>
@@ -333,8 +332,8 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
 
       {lastRun && (
         <div className="miya-run-summary">
-          <strong>Статус:</strong> {lastRun.status} · <strong>provider:</strong>{' '}
-          {lastRun.provider || selectedProvider} · <strong>run_id:</strong> {lastRun.run_id}
+          <strong>Статус:</strong> {lastRun.status} · <strong>провайдер:</strong>{' '}
+          {lastRun.provider || selectedProvider} · <strong>запуск:</strong> {lastRun.run_id}
           <br />
           <strong>trace_id:</strong> <code>{lastRun.trace_id}</code>
         </div>
@@ -363,7 +362,7 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
       {events.length > 0 && (
         <div className="miya-replay-controls">
           <div className="miya-replay-header">
-            <span className="miya-run-badge">{events.length} events</span>
+            <span className="miya-run-badge">{events.length} событий</span>
             <label className="miya-replay-speed">
               <span>Скорость</span>
               <select
@@ -384,7 +383,7 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
               onClick={() => void handleReplay()}
               disabled={busy || replaying || !graph}
             >
-              {replaying ? 'Replay…' : 'Повторить'}
+              {replaying ? 'Повтор…' : 'Повторить'}
             </button>
             <button
               type="button"
@@ -414,16 +413,16 @@ export function RunConsole({ graph, syncedRun, onRunComplete }: RunConsoleProps)
 
       {(events.length > 0 || (lastRun && Object.keys(lastRun.outputs).length > 0)) && (
         <details className="miya-run-outputs">
-          <summary>Run details: {events.length} events и outputs узлов</summary>
+          <summary>Подробности запуска: {events.length} событий и выводы узлов</summary>
           {lastRun && Object.keys(lastRun.outputs).length > 0 && (
             <>
-              <h3 className="miya-run-details-title">Outputs узлов</h3>
+              <h3 className="miya-run-details-title">Выводы узлов</h3>
               <pre>{JSON.stringify(lastRun.outputs, null, 2)}</pre>
             </>
           )}
           {events.length > 0 && (
             <>
-              <h3 className="miya-run-details-title">Event log</h3>
+              <h3 className="miya-run-details-title">Журнал событий</h3>
               <ol className="miya-run-events">
                 {events.map((event, index) => (
                   <li

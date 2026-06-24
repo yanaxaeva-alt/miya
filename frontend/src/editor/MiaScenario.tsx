@@ -114,7 +114,7 @@ export function MiaScenario({ graph, lastRun, onModelsChange, compact = false }:
   return (
     <section id="miya-scenario" className={`miya-scenario${compact ? ' miya-scenario-compact' : ''}`}>
       <div className="miya-run-header">
-        <h2 className="miya-run-title">{compact ? 'Acceptance checklist' : 'Сценарий v1.0 Acceptance'}</h2>
+        <h2 className="miya-run-title">{compact ? 'Чеклист сценария' : 'Сценарий v1.0'}</h2>
         <span className="miya-run-badge">{setupReady ? 'готов' : 'настройка'}</span>
         <button
           type="button"
@@ -136,8 +136,8 @@ export function MiaScenario({ graph, lastRun, onModelsChange, compact = false }:
 
       {!compact && (
         <p className="miya-run-hint">
-          Сквозной сценарий v1.0: runtime profile → templates → models → persona → граф →
-          библиотека → чат → запуск → approval.
+          Сквозной сценарий v1.0: профиль компьютера, шаблоны, модели, персона,
+          граф, библиотека, чат, запуск и подтверждение.
           Провайдер: <strong>{status?.provider ?? '…'}</strong>
           {status?.mlxAvailable ? ' (MLX)' : ' (mock)'}.
         </p>
@@ -149,70 +149,70 @@ export function MiaScenario({ graph, lastRun, onModelsChange, compact = false }:
       <ol className="miya-scenario-steps">
         {compact ? (
           <>
-            <StepRow done={Boolean(status?.online)} label="Backend online" />
+            <StepRow done={Boolean(status?.online)} label="Локальный MiaOS доступен" />
             <StepRow
               done={Boolean(status?.aeonOnline)}
-              label="AEON runtime online"
+              label="AEON готов"
               actionLabel="К AEON"
               onAction={() => scrollToPanel('miya-aeon-studio')}
             />
             <StepRow
               done={Boolean(status?.aeonResponded)}
-              label="AEON ответил на ask"
+              label="AEON ответил"
               actionLabel="Спросить"
               onAction={() => scrollToPanel('miya-aeon-studio')}
             />
-            <StepRow done={Boolean(status?.aeonGoalAdded)} label="Добавлена user-цель" />
-            <StepRow done={Boolean(status?.aeonConsolidated)} label="Consolidation выполнен" />
+            <StepRow done={Boolean(status?.aeonGoalAdded)} label="Добавлена цель" />
+            <StepRow done={Boolean(status?.aeonConsolidated)} label="Память закреплена" />
           </>
         ) : (
           <>
-            <StepRow done={Boolean(status?.online)} label="Backend MiaOS online" />
+            <StepRow done={Boolean(status?.online)} label="Локальный MiaOS доступен" />
             <StepRow
               done={Boolean(status?.runtimeProfileSelected)}
-              label="Runtime Profile — выбран профиль железа"
-              actionLabel="К Runtime"
+              label="Выбран профиль компьютера"
+              actionLabel="К профилю"
               onAction={() => scrollToPanel('miya-runtime-profile')}
             />
             <StepRow
               done={Boolean(status?.templateRegistryReady)}
-              label="Template Registry — mia-minimal доступен"
-              actionLabel="К Templates"
+              label="Шаблон Mia Minimal доступен"
+              actionLabel="К шаблонам"
               onAction={() => scrollToPanel('miya-template-registry')}
             />
             <StepRow
               done={Boolean(status?.modelsReady)}
-              label={`Model Studio — демо-модели (${status?.modelCount ?? 0})`}
+              label={`Модели доступны (${status?.modelCount ?? 0})`}
             />
-            <StepRow done={Boolean(status?.personaReady)} label="Persona Studio — пакет Mia" />
+            <StepRow done={Boolean(status?.personaReady)} label="Персона Mia готова" />
             <StepRow done={Boolean(status?.canvasReady)} label="Холст — шаблон Mia Minimal" />
-            <StepRow done={Boolean(status?.libraryReady)} label="Graph Library — mia-minimal.json" />
+            <StepRow done={Boolean(status?.libraryReady)} label="Граф сохранён в библиотеке" />
             <StepRow
               done={Boolean(status?.runWaitingApproval || status?.runCompleted)}
-              label="Run Console — запуск графа"
-              actionLabel="К Run Console"
+              label="Сценарий запущен"
+              actionLabel="К запуску"
               onAction={() => scrollToPanel('miya-run-console')}
             />
             <StepRow
               done={Boolean(status?.runCompleted)}
-              label="Approval Queue — одобрить publish"
-              actionLabel="К Approval"
+              label="Подтверждение обработано"
+              actionLabel="К подтверждению"
               onAction={() => scrollToPanel('miya-approval-queue')}
             />
             <StepRow
               done={Boolean(status?.aeonOnline)}
-              label="AEON Studio — runtime online"
+              label="AEON готов"
               actionLabel="К AEON"
               onAction={() => scrollToPanel('miya-aeon-studio')}
             />
             <StepRow
               done={Boolean(status?.aeonResponded)}
-              label="AEON Studio — получен ответ на ask"
+              label="AEON ответил"
               actionLabel="Спросить AEON"
               onAction={() => scrollToPanel('miya-aeon-studio')}
             />
-            <StepRow done={Boolean(status?.aeonGoalAdded)} label="AEON — добавлена user-цель" />
-            <StepRow done={Boolean(status?.aeonConsolidated)} label="AEON — выполнен consolidation" />
+            <StepRow done={Boolean(status?.aeonGoalAdded)} label="AEON запомнил цель" />
+            <StepRow done={Boolean(status?.aeonConsolidated)} label="AEON закрепил память" />
           </>
         )}
       </ol>
@@ -220,10 +220,10 @@ export function MiaScenario({ graph, lastRun, onModelsChange, compact = false }:
       {!compact && (
         <div className="miya-scenario-actions">
           <button type="button" className="miya-btn" onClick={() => scrollToPanel('miya-chat-studio')}>
-            Chat Studio
+            Чат
           </button>
           <button type="button" className="miya-btn" onClick={() => scrollToPanel('miya-run-console')}>
-            Run Console
+            Запуск
           </button>
           <button
             type="button"

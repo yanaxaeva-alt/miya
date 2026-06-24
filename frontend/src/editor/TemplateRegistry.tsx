@@ -17,6 +17,19 @@ function filenameForTemplate(template: MiaosTemplateItem): string {
   return `${template.template_id}.json`;
 }
 
+function templateDescription(template: MiaosTemplateItem): string {
+  if (template.template_id === 'mia-minimal') {
+    return 'Базовый сценарий: планировщик, исполнитель и подтверждение перед действием.';
+  }
+  if (template.template_id === 'draft-with-tools') {
+    return 'Сценарий с инструментами: поиск, черновик ответа и подтверждение.';
+  }
+  if (template.template_id === 'chat-memory-loop') {
+    return 'Сценарий для экспериментов с чатом, восприятием и памятью.';
+  }
+  return template.description;
+}
+
 export function TemplateRegistry({ graph }: TemplateRegistryProps) {
   const [templates, setTemplates] = useState<MiaosTemplateItem[]>([]);
   const [loading, setLoading] = useState(false);
@@ -77,7 +90,7 @@ export function TemplateRegistry({ graph }: TemplateRegistryProps) {
         const spec = await instantiateTemplate(template.template_id);
         const count = importMiaosToCanvas(graph, spec);
         setMessage(`Шаблон «${template.name}» загружен на холст (${count} узлов)`);
-        setStatus(`Template Registry → холст: ${template.template_id}`);
+        setStatus(`Шаблон загружен на холст: ${template.template_id}`);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Не удалось создать граф из шаблона');
       } finally {
@@ -94,8 +107,8 @@ export function TemplateRegistry({ graph }: TemplateRegistryProps) {
     try {
       const spec = await instantiateTemplate(template.template_id);
       const saved = await saveGraphToLibrary(spec, filenameForTemplate(template));
-      setMessage(`Сохранено в Graph Library: ${saved.filename} (${saved.node_count} узлов)`);
-      setStatus(`Template Registry → Library: ${saved.filename}`);
+      setMessage(`Сохранено в библиотеку графов: ${saved.filename} (${saved.node_count} узлов)`);
+      setStatus(`Шаблон сохранён в библиотеку: ${saved.filename}`);
       window.dispatchEvent(new CustomEvent('miya:studio-refresh'));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось сохранить шаблон');
@@ -107,8 +120,8 @@ export function TemplateRegistry({ graph }: TemplateRegistryProps) {
   return (
     <section id="miya-template-registry" className="miya-template-registry">
       <div className="miya-run-header">
-        <h2 className="miya-run-title">Template Registry</h2>
-        <span className="miya-run-badge">{templates.length} templates</span>
+        <h2 className="miya-run-title">Шаблоны</h2>
+        <span className="miya-run-badge">{templates.length} шаблонов</span>
         <button
           type="button"
           className="miya-btn miya-btn-secondary"
@@ -120,9 +133,8 @@ export function TemplateRegistry({ graph }: TemplateRegistryProps) {
       </div>
 
       <p className="miya-run-hint">
-        Каталог встроенных шаблонов из <code>GET /templates</code>. Factory endpoint{' '}
-        <code>POST /templates/&#123;id&#125;/instantiate</code> создаёт MiaOS graph spec для холста
-        или Graph Library.
+        Встроенные сценарии для быстрого старта. Шаблон можно открыть на холсте или сохранить в
+        библиотеку графов.
       </p>
 
       {message && <p className="miya-persona-message">{message}</p>}
@@ -140,9 +152,9 @@ export function TemplateRegistry({ graph }: TemplateRegistryProps) {
                 <strong>{template.name}</strong>
                 <span className="miya-run-badge">{template.category}</span>
               </div>
-              <p>{template.description}</p>
+              <p>{templateDescription(template)}</p>
               <p className="miya-run-hint">
-                <code>{template.template_id}</code> · {template.node_count} nodes
+                <code>{template.template_id}</code> · {template.node_count} узлов
               </p>
               <div className="miya-template-tags">
                 {template.tags.map((tag) => (
@@ -166,7 +178,7 @@ export function TemplateRegistry({ graph }: TemplateRegistryProps) {
                   onClick={() => void saveToLibrary(template)}
                   disabled={workingId === template.template_id}
                 >
-                  В Library
+                  В библиотеку
                 </button>
               </div>
             </article>
